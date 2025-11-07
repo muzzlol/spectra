@@ -1,35 +1,36 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
-import { useAction } from 'convex/react'
-import { useSuspenseQuery } from '@tanstack/react-query'
-import { convexQuery } from '@convex-dev/react-query'
-import { api } from '../../convex/_generated/api'
+import { convexQuery } from "@convex-dev/react-query"
+import { useSuspenseQuery } from "@tanstack/react-query"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { useAction } from "convex/react"
+import { api } from "../../convex/_generated/api"
 
-export const Route = createFileRoute('/anotherPage')({
-  component: AnotherPage,
+export const Route = createFileRoute("/anotherPage")({
+  component: AnotherPage
 })
 
 function AnotherPage() {
   const callMyAction = useAction(api.myFunctions.myAction)
 
   const { data } = useSuspenseQuery(
-    convexQuery(api.myFunctions.listNumbers, { count: 10 }),
+    convexQuery(api.myFunctions.listNumbers, { count: 10 })
   )
 
   return (
-    <main className="p-8 flex flex-col gap-16">
-      <h1 className="text-4xl font-bold text-center">
+    <main className="flex flex-col gap-16 p-8">
+      <h1 className="text-center font-bold text-4xl">
         Convex + Tanstack Start
       </h1>
-      <div className="flex flex-col gap-8 max-w-lg mx-auto">
-        <p>Numbers: {data.numbers.join(', ')}</p>
+      <div className="mx-auto flex max-w-lg flex-col gap-8">
+        <p>Numbers: {data.numbers.join(", ")}</p>
         <p>Click the button below to add a random number to the database.</p>
         <p>
           <button
-            className="bg-dark dark:bg-light text-light dark:text-dark text-sm px-4 py-2 rounded-md border-2"
+            type="button"
+            className="rounded-md border-2 bg-dark px-4 py-2 text-light text-sm dark:bg-light dark:text-dark"
             onClick={() => {
               callMyAction({
-                first: Math.round(Math.random() * 100),
-              }).then(() => alert('Number added!'))
+                first: Math.round(Math.random() * 100)
+              }).then(() => alert("Number added!"))
             }}
           >
             Call action to add a random number

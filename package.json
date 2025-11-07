@@ -10,8 +10,8 @@
     "dev:convex": "npx convex dev",
     "build": "vite build && tsc --noEmit",
     "start": "node .output/server/index.mjs",
-    "format": "prettier --write .",
-    "lint": "tsc && eslint .  --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "format": "biome format --write .",
+    "lint": "biome lint --write"
   },
   "dependencies": {
     "@convex-dev/react-query": "^0.0.0-alpha.11",
@@ -24,14 +24,12 @@
     "react-dom": "^19.1.1"
   },
   "devDependencies": {
-    "@convex-dev/eslint-plugin": "^1.0.0",
+    "@biomejs/biome": "2.3.4",
     "@tailwindcss/vite": "^4.1.13",
-    "@tanstack/eslint-config": "^0.3.2",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.3",
     "concurrently": "~9.2.1",
-    "prettier": "^3.6.2",
     "tailwindcss": "^4.1.13",
     "typescript": "^5.9.2",
     "vite": "^7.1.5",
