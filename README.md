@@ -13,6 +13,8 @@ There are diff modes:
 
 This is made possible with convex for a reactive database backend, tanstack start serving as a meta-framework for react and cloudflare's Durable Objects for real-time the wss func.
 
+# dev setup
+
 npm - pnpm - bun
 npx - bunx
 
