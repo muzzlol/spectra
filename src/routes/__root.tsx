@@ -6,7 +6,7 @@ import {
   Scripts
 } from "@tanstack/react-router"
 import type * as React from "react"
-import appCss from "~/styles/app.css?url"
+import appCss from "@/styles/app.css?url"
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient

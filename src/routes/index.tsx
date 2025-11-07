@@ -2,6 +2,7 @@ import { convexQuery } from "@convex-dev/react-query"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useMutation } from "convex/react"
+import { Button } from "@/components/ui/button"
 import { api } from "../../convex/_generated/api"
 
 export const Route = createFileRoute("/")({
@@ -17,6 +18,8 @@ function Home() {
 
   return (
     <main className="flex flex-col gap-16 p-8">
+      <Button>Button</Button>
+
       <h1 className="text-center font-bold text-4xl">
         Convex + Tanstack Start
       </h1>
@@ -65,57 +68,7 @@ function Home() {
           </Link>{" "}
           to send an action.
         </p>
-        <div className="flex flex-col">
-          <p className="font-bold text-lg">Useful resources:</p>
-          <div className="flex gap-2">
-            <div className="flex w-1/2 flex-col gap-2">
-              <ResourceCard
-                title="Convex docs"
-                description="Read comprehensive documentation for all Convex features."
-                href="https://docs.convex.dev/home"
-              />
-              <ResourceCard
-                title="Stack articles"
-                description="Learn about best practices, use cases, and more from a growing
-            collection of articles, videos, and walkthroughs."
-                href="https://www.typescriptlang.org/docs/handbook/2/basic-types.html"
-              />
-            </div>
-            <div className="flex w-1/2 flex-col gap-2">
-              <ResourceCard
-                title="Templates"
-                description="Browse our collection of templates to get started quickly."
-                href="https://www.convex.dev/templates"
-              />
-              <ResourceCard
-                title="Discord"
-                description="Join our developer community to ask questions, trade tips & tricks,
-            and show off your projects."
-                href="https://www.convex.dev/community"
-              />
-            </div>
-          </div>
-        </div>
       </div>
     </main>
-  )
-}
-
-function ResourceCard({
-  title,
-  description,
-  href
-}: {
-  title: string
-  description: string
-  href: string
-}) {
-  return (
-    <div className="flex h-28 flex-col gap-2 overflow-auto rounded-md bg-slate-200 p-4 dark:bg-slate-800">
-      <a href={href} className="text-sm underline hover:no-underline">
-        {title}
-      </a>
-      <p className="text-xs">{description}</p>
-    </div>
   )
 }

@@ -16,6 +16,7 @@ node_modules
 /public/build
 /dist/
 /dist-ssr/
+.wrangler/
 
 # Sentry Config File
 .env.sentry-build-plugin
@@ -25,3 +26,4 @@ node_modules
 /playwright/.cache/
 
 app.config.timestamp_*.js
+
