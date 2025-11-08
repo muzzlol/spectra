@@ -1,8 +1,8 @@
-import { defineSchema, defineTable } from "convex/server"
-import { v } from "convex/values"
+import { authTables } from "@convex-dev/auth/server"
+import { defineSchema } from "convex/server"
 
-export default defineSchema({
-  numbers: defineTable({
-    value: v.number()
-  })
+const schema = defineSchema({
+  ...authTables
 })
+
+export default schema
