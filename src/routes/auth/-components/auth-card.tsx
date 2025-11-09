@@ -1,3 +1,4 @@
+import { useAuthActions } from "@convex-dev/auth/react"
 import { useForm } from "@tanstack/react-form"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -11,6 +12,7 @@ import {
 import { emailFormOpts, usernameFormOpts } from "@/lib/schemas/account"
 
 export function AuthCard({ session }) {
+  const { signIn } = useAuthActions()
   const usernameForm = useForm(usernameFormOpts)
   const emailForm = useForm(emailFormOpts)
 
