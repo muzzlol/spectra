@@ -8,7 +8,7 @@ export const isUsernameAvailable = query({
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("username"), args.username))
+      .withIndex("by_username", (q) => q.eq("username", args.username))
       .first()
     return !existing
   }

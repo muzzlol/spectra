@@ -15,7 +15,7 @@ import { usernameFormOpts } from "@/lib/forms/username"
 
 export const emailSchema = z.object({
   email: z.email({
-    message: "Invalid email address"
+    error: "Invalid email address"
   })
 })
 
