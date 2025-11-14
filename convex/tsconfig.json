@@ -18,7 +18,12 @@
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "isolatedModules": true,
-    "noEmit": true
+    "noEmit": true,
+
+
+    "paths": {
+      "~/shared/*": ["../shared/*"]
+    }
   },
   "include": ["./**/*"],
   "exclude": ["./_generated"]

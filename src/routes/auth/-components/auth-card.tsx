@@ -1,6 +1,8 @@
 import { useAuthActions } from "@convex-dev/auth/react"
-import { useForm } from "@tanstack/react-form"
+import { formOptions, useForm } from "@tanstack/react-form"
 import { toast } from "sonner"
+import { z } from "zod"
+import { GithubIcon, GoogleIcon } from "@/components/brand-icons"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -9,7 +11,22 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card"
-import { emailFormOpts, usernameFormOpts } from "@/lib/schemas/account"
+import { usernameFormOpts } from "@/lib/forms/username"
+
+export const emailSchema = z.object({
+  email: z.email({
+    message: "Invalid email address"
+  })
+})
+
+export const emailFormOpts = formOptions({
+  defaultValues: {
+    email: ""
+  },
+  validators: {
+    onSubmit: emailSchema
+  }
+})
 
 export function AuthCard({ session }) {
   const { signIn } = useAuthActions()
