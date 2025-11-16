@@ -1,5 +1,5 @@
 import { convexQuery } from "@convex-dev/react-query"
-import { useSuspenseQuery } from "@tanstack/react-query"
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useMutation } from "convex/react"
 import { Button } from "@/components/ui/button"
@@ -11,20 +11,22 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const {
-    data: { viewer, numbers }
+    data: { numbers }
   } = useSuspenseQuery(convexQuery(api.myFunctions.listNumbers, { count: 10 }))
+
+  const { data: user } = useQuery(convexQuery(api.users.getCurrentUser, {}))
 
   const addNumber = useMutation(api.myFunctions.addNumber)
 
   return (
     <main className="flex flex-col gap-16 p-8">
       <Button>Button</Button>
+      <p>{JSON.stringify(user)}</p>
 
       <h1 className="text-center font-bold text-4xl">
         Convex + Tanstack Start
       </h1>
       <div className="mx-auto flex max-w-lg flex-col gap-8">
-        <p>Welcome {viewer ?? "Anonymous"}!</p>
         <p>
           Click the button below and open this page in another window - this
           data is persisted in the Convex cloud database!
