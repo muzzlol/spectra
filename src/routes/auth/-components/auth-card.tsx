@@ -36,6 +36,7 @@ export function AuthCard() {
     },
     onSuccess: () => {
       toast.success("Check your email for a magic link!")
+      emailForm.reset()
     },
     onError: (error) => {
       toast.error("Failed to send email")
@@ -88,7 +89,6 @@ export function AuthCard() {
             e.preventDefault()
             e.stopPropagation()
             await emailForm.handleSubmit()
-            emailForm.reset()
           }}
         >
           <motion.div
