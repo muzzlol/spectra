@@ -5,7 +5,9 @@ import {
   Outlet,
   Scripts
 } from "@tanstack/react-router"
+import { ThemeProvider } from "next-themes"
 import type * as React from "react"
+import { Toaster } from "@/components/ui/sonner"
 import appCss from "@/styles/app.css?url"
 
 export const Route = createRootRouteWithContext<{
@@ -66,7 +68,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {children}
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {children}
+        </ThemeProvider>
+        <Toaster />
         <Scripts />
       </body>
     </html>

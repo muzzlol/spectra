@@ -1,5 +1,5 @@
 import GitHub from "@auth/core/providers/github"
-// import Google from "@auth/core/providers/google"
+import Google from "@auth/core/providers/google"
 import Resend from "@auth/core/providers/resend"
 import { Anonymous } from "@convex-dev/auth/providers/Anonymous"
 import { convexAuth } from "@convex-dev/auth/server"
@@ -16,6 +16,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       clientSecret: getEnv("AUTH_GITHUB_SECRET"),
       profile(githubProfile) {
         return {
+          id: String(githubProfile.id),
           username: githubProfile.login,
           isAnonymous: false,
           email: githubProfile.email,
@@ -32,6 +33,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     //   clientSecret: getEnv("AUTH_GOOGLE_SECRET"),
     //   profile(googleProfile) {
     //     return {
+    //       id: String(googleProfile.id),
     //       username: googleProfile.name,
     //       isAnonymous: false,
     //       email: googleProfile.email,
