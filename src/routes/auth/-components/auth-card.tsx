@@ -43,6 +43,10 @@ export function AuthCard() {
     }
   })
 
+  emailForm.options.onSubmit = async ({ value }) => {
+    await emailSignInMutation.mutateAsync(value)
+  }
+
   const githubSignInMutation = useMutation({
     mutationFn: async () => {
       await signIn("github")
@@ -84,7 +88,7 @@ export function AuthCard() {
             e.preventDefault()
             e.stopPropagation()
             await emailForm.handleSubmit()
-            emailSignInMutation.mutate(emailForm.state.values)
+            emailForm.reset()
           }}
         >
           <motion.div

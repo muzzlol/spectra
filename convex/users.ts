@@ -45,6 +45,14 @@ export const setUsername = mutation({
       throw new Error("Not authenticated")
     }
 
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_username", (q) => q.eq("username", args.username))
+      .first()
+    if (existing) {
+      throw new Error("Username already exists")
+    }
+
     await ctx.db.patch(userId, { username: args.username })
     return null
   }
