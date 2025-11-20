@@ -1,76 +1,85 @@
 import { convexQuery } from "@convex-dev/react-query"
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, Link } from "@tanstack/react-router"
-import { useMutation } from "convex/react"
-import { Button } from "@/components/ui/button"
-import { api } from "../../convex/_generated/api"
+import { useQuery } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
+import { useState } from "react"
+import { GameForm } from "@/components/game-form"
+import { PlayGuest } from "@/components/play-guest"
+import {
+  SchematicCanvas,
+  type SchematicCanvasRef
+} from "@/components/schematic-canvas"
+import { Spinner } from "@/components/ui/spinner"
+import { UserProfile } from "@/components/user-profile"
+import { api } from "~/convex/_generated/api"
 
 export const Route = createFileRoute("/")({
   component: Home
 })
 
 function Home() {
-  const {
-    data: { numbers }
-  } = useSuspenseQuery(convexQuery(api.myFunctions.listNumbers, { count: 10 }))
+  const [schematicState, setSchematicState] =
+    useState<SchematicCanvasRef | null>(null)
+  const { data: user, isLoading } = useQuery(
+    convexQuery(api.users.getCurrentUser, {})
+  )
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-black text-white">
+        <Spinner size="lg" />
+      </div>
+    )
+  }
 
-  const { data: user } = useQuery(convexQuery(api.users.getCurrentUser, {}))
+  const placeholderUser = {
+    _id: "placeholder",
+    username: "Guest",
+    isAnonymous: true,
+    email: "yo@mail.com",
+    picture: "https://github.com/muzzlol.png"
+  }
 
-  const addNumber = useMutation(api.myFunctions.addNumber)
+  const currentUser = user ?? placeholderUser
 
   return (
-    <main className="flex flex-col gap-16 p-8">
-      <Button>Button</Button>
-      <p>{JSON.stringify(user)}</p>
-
-      <h1 className="text-center font-bold text-4xl">
-        Convex + Tanstack Start
-      </h1>
-      <div className="mx-auto flex max-w-lg flex-col gap-8">
-        <p>
-          Click the button below and open this page in another window - this
-          data is persisted in the Convex cloud database!
-        </p>
-        <p>
-          <button
-            type="button"
-            className="rounded-md border-2 bg-dark px-4 py-2 text-light text-sm dark:bg-light dark:text-dark"
-            onClick={() => {
-              void addNumber({ value: Math.floor(Math.random() * 10) })
-            }}
-          >
-            Add a random number
-          </button>
-        </p>
-        <p>
-          Numbers:{" "}
-          {numbers.length === 0 ? "Click the button!" : numbers.join(", ")}
-        </p>
-        <p>
-          Edit{" "}
-          <code className="rounded-md bg-slate-200 px-1 py-0.5 font-bold font-mono text-sm dark:bg-slate-800">
-            convex/myFunctions.ts
-          </code>{" "}
-          to change your backend
-        </p>
-        <p>
-          Edit{" "}
-          <code className="rounded-md bg-slate-200 px-1 py-0.5 font-bold font-mono text-sm dark:bg-slate-800">
-            src/routes/index.tsx
-          </code>{" "}
-          to change your frontend
-        </p>
-        <p>
-          Open{" "}
-          <Link
-            to="/anotherPage"
-            className="text-blue-600 underline hover:no-underline"
-          >
-            another page
-          </Link>{" "}
-          to send an action.
-        </p>
+    <div className="relative min-h-screen w-full overflow-hidden bg-black text-white">
+      {/* Schematic Background */}
+      <div className="absolute inset-0 z-0">
+        <SchematicCanvas onStateChange={setSchematicState} />
       </div>
-    </main>
+
+      {/* Debug Info - Bottom Left */}
+      {schematicState && (
+        <div className="pointer-events-none absolute bottom-4 left-4 z-10">
+          <div className="font-mono text-[10px] text-gray-500">
+            Nodes: {schematicState.nodes.length} | Links:{" "}
+            {schematicState.links.length} | ID: {schematicState.genId}
+          </div>
+        </div>
+      )}
+
+      {/* Content Overlay */}
+      <main className="pointer-events-none relative z-10 flex min-h-screen w-full flex-col items-center justify-center p-4 md:p-8">
+        <div className="pointer-events-auto mx-auto flex max-w-5xl flex-col items-center gap-8 border border-white/20 bg-black/60 p-8 backdrop-blur-md">
+          {/* Header */}
+          <div className="mb-8 space-y-2 text-center">
+            <h1 className="font-bold text-6xl tracking-tighter">SPECTRA</h1>
+            <p className="text-xs uppercase tracking-[0.2em] opacity-70">
+              - yoooo -
+            </p>
+          </div>
+          {currentUser ? (
+            <>
+              <UserProfile />
+              <GameForm />
+            </>
+          ) : (
+            <PlayGuest />
+          )}
+          <footer className="mt-16 text-center font-mono text-gray-500 text-xs">
+            SYSTEMS ONLINE.
+          </footer>
+        </div>
+      </main>
+    </div>
   )
 }
