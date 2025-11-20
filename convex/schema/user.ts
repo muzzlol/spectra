@@ -5,5 +5,12 @@ export const User = v.object({
   isAnonymous: v.boolean(),
   email: v.optional(v.string()),
   picture: v.optional(v.string()),
-  emailVerificationTime: v.optional(v.number())
+  emailVerificationTime: v.optional(v.number()),
+  stats: v.optional(
+    v.object({
+      draw: v.object({ wins: v.number(), played: v.number() }),
+      code: v.object({ wins: v.number(), played: v.number() }),
+      typing: v.object({ wins: v.number(), played: v.number() })
+    })
+  )
 })
