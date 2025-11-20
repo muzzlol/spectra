@@ -10,6 +10,7 @@ import { getEnv } from "./env"
 import { getUserByVerifiedEmail } from "./users"
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
+  // github, google and resend magic link = actual auth'd users
   providers: [
     GitHub({
       clientId: getEnv("AUTH_GITHUB_ID"),
