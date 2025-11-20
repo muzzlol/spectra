@@ -1,6 +1,7 @@
 import { convexQuery } from "@convex-dev/react-query"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
+import { useTheme } from "next-themes"
 import { useState } from "react"
 import { GameForm } from "@/components/game-form"
 import { PlayGuest } from "@/components/play-guest"
@@ -8,6 +9,10 @@ import {
   SchematicCanvas,
   type SchematicCanvasRef
 } from "@/components/schematic-canvas"
+import {
+  ThemeToggleButton,
+  useThemeTransition
+} from "@/components/theme-toggle-button"
 import { Spinner } from "@/components/ui/spinner"
 import { UserProfile } from "@/components/user-profile"
 import { api } from "~/convex/_generated/api"
@@ -19,12 +24,21 @@ export const Route = createFileRoute("/")({
 function Home() {
   const [schematicState, setSchematicState] =
     useState<SchematicCanvasRef | null>(null)
+  const { theme, setTheme } = useTheme()
+  const { startTransition } = useThemeTransition()
   const { data: user, isLoading } = useQuery(
     convexQuery(api.users.getCurrentUser, {})
   )
+
+  const handleThemeToggle = () => {
+    startTransition(() => {
+      setTheme(theme === "light" ? "dark" : "light")
+    })
+  }
+
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-black text-white">
+      <div className="flex h-screen items-center justify-center bg-background text-foreground">
         <Spinner size="lg" />
       </div>
     )
@@ -41,10 +55,19 @@ function Home() {
   const currentUser = user ?? placeholderUser
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-black text-white">
+    <div className="relative min-h-screen w-full overflow-hidden bg-background text-foreground transition-colors duration-300">
       {/* Schematic Background */}
       <div className="absolute inset-0 z-0">
         <SchematicCanvas onStateChange={setSchematicState} />
+      </div>
+
+      {/* Theme Toggle */}
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeToggleButton
+          theme={theme === "dark" ? "dark" : "light"}
+          onClick={handleThemeToggle}
+          variant="circle-blur"
+        />
       </div>
 
       {/* Debug Info - Bottom Left */}

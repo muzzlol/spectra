@@ -1,5 +1,11 @@
-import type React from "react"
-import { useCallback, useEffect, useState } from "react"
+import {
+  type FC,
+  type MouseEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState
+} from "react"
 import { SchematicNodeRenderer } from "@/components/schematic-node"
 import {
   distance,
@@ -14,17 +20,96 @@ const NODE_COUNT_MAX = 35
 const WIDTH = 1600
 const HEIGHT = 900
 
+interface Particle {
+  id: string
+  x: number
+  y: number
+  vx: number
+  vy: number
+  life: number
+  color: string
+}
+
 export interface SchematicCanvasRef {
   nodes: SchematicNode[]
   links: SchematicLink[]
   genId: string
 }
 
-export const SchematicCanvas: React.FC<{
+export const SchematicCanvas: FC<{
   onStateChange?: (state: SchematicCanvasRef) => void
 }> = ({ onStateChange }) => {
   const [nodes, setNodes] = useState<SchematicNode[]>([])
   const [links, setLinks] = useState<SchematicLink[]>([])
+  const [particles, setParticles] = useState<Particle[]>([])
+  const svgRef = useRef<SVGSVGElement>(null)
+  const animationFrameRef = useRef<number>(0)
+
+  // Particle Animation Loop
+  useEffect(() => {
+    if (particles.length === 0) return
+
+    let lastTime = performance.now()
+
+    const animate = (time: number) => {
+      const dt = (time - lastTime) / 16 // Normalize to ~60fps
+      lastTime = time
+
+      setParticles((prevParticles) => {
+        const nextParticles = prevParticles
+          .map((p) => ({
+            ...p,
+            x: p.x + p.vx * dt,
+            y: p.y + p.vy * dt,
+            life: p.life - 0.02 * dt
+          }))
+          .filter((p) => p.life > 0)
+        return nextParticles
+      })
+
+      if (particles.length > 0) {
+        animationFrameRef.current = requestAnimationFrame(animate)
+      }
+    }
+
+    animationFrameRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+    }
+  }, [particles.length])
+
+  const spawnParticles = useCallback((x: number, y: number) => {
+    const newParticles: Particle[] = []
+    const count = 12
+
+    // Calculate scale factor to ensure effect size is consistent with pointer
+    // regardless of SVG zoom/scale
+    let scale = 1
+    if (svgRef.current) {
+      const ctm = svgRef.current.getScreenCTM()
+      if (ctm) {
+        scale = 1 / ctm.a // approximate scale
+      }
+    }
+
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2
+      const speed = randomRange(0.8, 1.2) * scale // More uniform speed
+      newParticles.push({
+        id: Math.random().toString(36).substr(2, 9),
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 0.5,
+        color: "currentColor"
+      })
+    }
+    setParticles((prev) => [...prev, ...newParticles])
+  }, [])
 
   // Generation Logic
   const generateSchematic = useCallback(() => {
@@ -111,6 +196,22 @@ export const SchematicCanvas: React.FC<{
     onStateChange?.({ nodes: newNodes, links: newLinks, genId: id })
   }, [onStateChange])
 
+  const handleCanvasClick = useCallback(
+    (e: MouseEvent) => {
+      if (svgRef.current) {
+        const point = svgRef.current.createSVGPoint()
+        point.x = e.clientX
+        point.y = e.clientY
+        const svgPoint = point.matrixTransform(
+          svgRef.current.getScreenCTM()?.inverse()
+        )
+        spawnParticles(svgPoint.x, svgPoint.y)
+      }
+      generateSchematic()
+    },
+    [generateSchematic, spawnParticles]
+  )
+
   useEffect(() => {
     generateSchematic()
   }, [generateSchematic])
@@ -119,10 +220,11 @@ export const SchematicCanvas: React.FC<{
     // biome-ignore lint/a11y/useKeyWithClickEvents: Background interaction
     // biome-ignore lint/a11y/noStaticElementInteractions: Background interaction
     <div
-      onClick={generateSchematic}
-      className="relative flex h-screen w-full cursor-crosshair items-center justify-center overflow-hidden bg-black"
+      onClick={handleCanvasClick}
+      className="relative flex h-screen w-full cursor-crosshair items-center justify-center overflow-hidden bg-background text-foreground"
     >
       <svg
+        ref={svgRef}
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         className="h-full max-h-[900px] w-full max-w-[1600px]"
         preserveAspectRatio="xMidYMid meet"
@@ -137,7 +239,7 @@ export const SchematicCanvas: React.FC<{
             orient="auto"
             markerUnits="strokeWidth"
           >
-            <path d="M0,0 L0,6 L9,3 z" fill="white" />
+            <path d="M0,0 L0,6 L9,3 z" fill="currentColor" />
           </marker>
           <marker
             id="dot"
@@ -147,7 +249,7 @@ export const SchematicCanvas: React.FC<{
             refY="4"
             orient="auto"
           >
-            <circle cx="4" cy="4" r="2" fill="white" />
+            <circle cx="4" cy="4" r="2" fill="currentColor" />
           </marker>
         </defs>
 
@@ -172,7 +274,7 @@ export const SchematicCanvas: React.FC<{
                       y1={tangents.p1.y}
                       x2={tangents.p2.x}
                       y2={tangents.p2.y}
-                      stroke="white"
+                      stroke="currentColor"
                       strokeWidth="1"
                     />
                     <line
@@ -180,7 +282,7 @@ export const SchematicCanvas: React.FC<{
                       y1={tangents.p3.y}
                       x2={tangents.p4.x}
                       y2={tangents.p4.y}
-                      stroke="white"
+                      stroke="currentColor"
                       strokeWidth="1"
                     />
                   </g>
@@ -198,7 +300,7 @@ export const SchematicCanvas: React.FC<{
                   y1={sourceNode.y}
                   x2={targetNode.x}
                   y2={targetNode.y}
-                  stroke="white"
+                  stroke="currentColor"
                   strokeWidth="0.5"
                   strokeDasharray={isDotted ? "4 4" : "none"}
                   markerEnd={!isDotted ? "url(#dot)" : ""}
@@ -209,8 +311,8 @@ export const SchematicCanvas: React.FC<{
                     cx={(sourceNode.x + targetNode.x) / 2}
                     cy={(sourceNode.y + targetNode.y) / 2}
                     r={3}
-                    fill="black"
-                    stroke="white"
+                    fill="var(--background)"
+                    stroke="currentColor"
                     strokeWidth="1"
                   />
                 )}
@@ -224,13 +326,41 @@ export const SchematicCanvas: React.FC<{
           <SchematicNodeRenderer key={node.id} node={node} />
         ))}
 
+        {/* Particles Layer */}
+        <g>
+          {particles.map((p) => (
+            <circle
+              key={p.id}
+              cx={p.x}
+              cy={p.y}
+              r={1.5}
+              fill={p.color}
+              opacity={p.life}
+            />
+          ))}
+        </g>
+
         {/* Foreground Overlay / HUD elements */}
-        <rect x="20" y="20" width="200" height="1" fill="white" opacity="0.5" />
-        <rect x="20" y="20" width="1" height="50" fill="white" opacity="0.5" />
+        <rect
+          x="20"
+          y="20"
+          width="200"
+          height="1"
+          fill="currentColor"
+          opacity="0.5"
+        />
+        <rect
+          x="20"
+          y="20"
+          width="1"
+          height="50"
+          fill="currentColor"
+          opacity="0.5"
+        />
         <text
           x="30"
           y="40"
-          fill="white"
+          fill="currentColor"
           opacity="0.7"
           fontSize="10"
           fontFamily="monospace"
@@ -243,7 +373,7 @@ export const SchematicCanvas: React.FC<{
           y={HEIGHT - 40}
           width="200"
           height="1"
-          fill="white"
+          fill="currentColor"
           opacity="0.5"
         />
         <rect
@@ -251,13 +381,13 @@ export const SchematicCanvas: React.FC<{
           y={HEIGHT - 90}
           width="1"
           height="50"
-          fill="white"
+          fill="currentColor"
           opacity="0.5"
         />
         <text
           x={WIDTH - 30}
           y={HEIGHT - 50}
-          fill="white"
+          fill="currentColor"
           opacity="0.7"
           fontSize="10"
           fontFamily="monospace"

@@ -11,7 +11,7 @@ export const SchematicNodeRenderer: React.FC<SchematicNodeProps> = ({
 }) => {
   const { x, y, radius, type, rotation, details } = node
   const strokeWidth = 1.5
-  const color = "white"
+  const color = "currentColor"
 
   const renderContent = () => {
     switch (type) {
@@ -87,7 +87,7 @@ export const SchematicNodeRenderer: React.FC<SchematicNodeProps> = ({
               cy={0}
               r={radius * 0.1}
               stroke={color}
-              fill="black"
+              fill="var(--background)"
             />
           </g>
         )
@@ -195,7 +195,7 @@ export const SchematicNodeRenderer: React.FC<SchematicNodeProps> = ({
               r={radius * 0.3}
               stroke={color}
               strokeWidth={2}
-              fill="black"
+              fill="var(--background)"
             />
           </g>
         )
@@ -244,7 +244,7 @@ export const SchematicNodeRenderer: React.FC<SchematicNodeProps> = ({
               r={radius}
               stroke={color}
               strokeWidth={strokeWidth}
-              fill="black"
+              fill="var(--background)"
             />
             <circle cx={0} cy={0} r={2} fill={color} />
           </g>
