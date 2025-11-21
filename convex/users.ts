@@ -4,7 +4,6 @@ import type { QueryCtx } from "./_generated/server"
 import { mutation, query } from "./_generated/server"
 
 export const getCurrentUser = query({
-  args: {},
   returns: v.union(
     v.null(),
     v.object({
@@ -13,7 +12,14 @@ export const getCurrentUser = query({
       isAnonymous: v.boolean(),
       email: v.optional(v.string()),
       picture: v.optional(v.string()),
-      emailVerificationTime: v.optional(v.number())
+      emailVerificationTime: v.optional(v.number()),
+      stats: v.optional(
+        v.object({
+          draw: v.object({ wins: v.number(), played: v.number() }),
+          code: v.object({ wins: v.number(), played: v.number() }),
+          typing: v.object({ wins: v.number(), played: v.number() })
+        })
+      )
     })
   ),
   handler: async (ctx) => {
@@ -31,7 +37,8 @@ export const getCurrentUser = query({
       isAnonymous: user.isAnonymous,
       email: user.email,
       picture: user.picture,
-      emailVerificationTime: user.emailVerificationTime
+      emailVerificationTime: user.emailVerificationTime,
+      stats: user.stats
     }
   }
 })

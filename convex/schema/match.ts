@@ -6,5 +6,5 @@ export const Match = v.object({
   teamId: v.optional(v.string()),
   rank: v.number(),
   score: v.number(),
-  artifact: v.string()
+  artifact: v.string() // drawing svg, code snippet...
 })

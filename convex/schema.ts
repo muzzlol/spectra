@@ -16,3 +16,5 @@ export const schema = defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_and_arena", ["userId", "arenaId"])
 })
+
+export default schema
