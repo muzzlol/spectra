@@ -6,9 +6,9 @@ import { routerWithQueryClient } from "@tanstack/react-router-with-query"
 import { routeTree } from "./routeTree.gen"
 
 export function getRouter() {
-  const CONVEX_URL = import.meta.env.VITE_CONVEX_URL!
+  const CONVEX_URL = import.meta.env.VITE_CONVEX_URL
   if (!CONVEX_URL) {
-    console.error("missing envar CONVEX_URL")
+    throw new Error("missing envar CONVEX_URL")
   }
   const convexQueryClient = new ConvexQueryClient(CONVEX_URL)
 
