@@ -4,7 +4,6 @@ import { createFileRoute } from "@tanstack/react-router"
 import { useTheme } from "next-themes"
 import { useState } from "react"
 import { GameForm } from "@/components/game-form"
-import { PlayGuest } from "@/components/play-guest"
 import {
   SchematicCanvas,
   type SchematicCanvasRef
@@ -44,15 +43,13 @@ function Home() {
     )
   }
 
-  const placeholderUser = {
-    _id: "placeholder",
-    username: "Guest",
-    isAnonymous: true,
-    email: "yo@mail.com",
-    picture: "https://github.com/muzzlol.png"
-  }
-
-  const currentUser = user ?? placeholderUser
+  // const placeholderUser = {
+  //   _id: "placeholder",
+  //   username: "Guest",
+  //   isAnonymous: true,
+  //   email: "yo@mail.com",
+  //   picture: "https://github.com/muzzlol.png"
+  // }
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-background text-foreground transition-colors duration-300">
@@ -90,16 +87,10 @@ function Home() {
               - yoooo -
             </p>
           </div>
-          {currentUser ? (
-            <>
-              <UserProfile />
-              <GameForm />
-            </>
-          ) : (
-            <PlayGuest />
-          )}
-          <footer className="mt-16 text-center font-mono text-gray-500 text-xs">
-            SYSTEMS ONLINE.
+          <UserProfile user={user ?? null} />
+          {user && <GameForm />}
+          <footer className="mt-16 text-center font-mono text-muted text-xs">
+            SYSTEMS ONLINE
           </footer>
         </div>
       </main>
