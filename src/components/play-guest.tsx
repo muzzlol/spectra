@@ -31,7 +31,7 @@ export function PlayGuest() {
   }
 
   return (
-    <Card className="w-full max-w-sm border-white/10 bg-black/40 backdrop-blur-xl">
+    <Card className="w-full max-w-sm bg-secondary-background/80 backdrop-blur-xl">
       <CardHeader>
         <CardTitle className="text-center text-2xl">Welcome</CardTitle>
         <CardDescription className="text-center">
@@ -45,7 +45,7 @@ export function PlayGuest() {
               placeholder="Enter a username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="border-white/10 bg-white/5"
+              className="border-border bg-background"
               minLength={2}
               maxLength={20}
               required
@@ -62,7 +62,7 @@ export function PlayGuest() {
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-white/10 border-t" />
+            <span className="w-full border-border border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-background px-2 text-muted-foreground">Or</span>
@@ -72,7 +72,7 @@ export function PlayGuest() {
         <Button
           variant="outline"
           asChild
-          className="w-full border-white/10 hover:bg-white/5"
+          className="w-full border-border hover:bg-muted"
         >
           <Link to="/auth/$pathname" params={{ pathname: "sign-in" }}>
             Sign In

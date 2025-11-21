@@ -30,11 +30,11 @@ export function UserProfile({ user }: UserProfileProps) {
 
   return (
     <div className="relative w-full max-w-md">
-      <Card className="w-full border-white/10 bg-black/40 backdrop-blur-xl transition-all duration-500">
+      <Card className="w-full bg-secondary-background/80 backdrop-blur-xl transition-all duration-500">
         <CardHeader className="flex flex-row items-center gap-4">
-          <Avatar className="h-16 w-16 border-2 border-white/10">
+          <Avatar className="h-16 w-16 border-2 border-border">
             <AvatarImage src={picture} alt={username} />
-            <AvatarFallback className="bg-white/10 text-lg">
+            <AvatarFallback className="bg-muted text-lg">
               {username?.[0]?.toUpperCase() ?? "?"}
             </AvatarFallback>
           </Avatar>
@@ -42,7 +42,7 @@ export function UserProfile({ user }: UserProfileProps) {
             <CardTitle className="flex items-center gap-2 text-xl">
               {username}
               {isAnonymous && (
-                <span className="rounded bg-white/10 px-2 py-0.5 font-normal text-muted-foreground text-xs">
+                <span className="rounded bg-muted px-2 py-0.5 font-normal text-muted-foreground text-xs">
                   Guest
                 </span>
               )}
@@ -93,7 +93,7 @@ export function UserProfile({ user }: UserProfileProps) {
             </div>
           </div>
           {isAnonymous && (
-            <div className="mt-4 rounded-md bg-white/5 p-3 text-center text-muted-foreground text-xs">
+            <div className="mt-4 rounded-md bg-muted p-3 text-center text-muted-foreground text-xs">
               Sign in to save your stats permanently and appear on leaderboards.
             </div>
           )}
