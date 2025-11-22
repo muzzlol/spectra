@@ -15,6 +15,7 @@
   --overlay: oklch(100% 0 0 / 0.8);
   --shadow: 0 0 0 0 transparent;
   --muted: oklch(70% 0 0);
+  --destructive: oklch(60% 0.2 25);
   
   /* Chart colors tailored for schematic look */
   --chart-1: #000000;
@@ -37,6 +38,7 @@
   --overlay: oklch(0% 0 0 / 0.8);
   --shadow: 0 0 0 0 transparent;
   --muted: oklch(40% 0 0);
+  --destructive: oklch(70% 0.2 25);
   
   /* Chart colors tailored for schematic look (inverted) */
   --chart-1: #FFFFFF;
@@ -57,6 +59,7 @@
   --color-overlay: var(--overlay);
   --color-ring: var(--ring);
   --color-muted: var(--muted);
+  --color-destructive: var(--destructive);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
