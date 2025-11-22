@@ -2,6 +2,7 @@ import { useAuthActions } from "@convex-dev/auth/react"
 import { useForm } from "@tanstack/react-form"
 import { Link } from "@tanstack/react-router"
 import { useConvex } from "convex/react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -24,7 +25,12 @@ export function PlayGuest() {
       username: ""
     },
     onSubmit: async ({ value }) => {
-      await signIn("anon", { username: value.username })
+      try {
+        await signIn("anon", { username: value.username })
+      } catch (error) {
+        toast.error("Failed to join as guest. Please try again.")
+        console.error(error)
+      }
     }
   })
 
@@ -41,7 +47,7 @@ export function PlayGuest() {
           onSubmit={(e) => {
             e.preventDefault()
             e.stopPropagation()
-            form.handleSubmit()
+            void form.handleSubmit()
           }}
           className="grid gap-4"
         >
