@@ -57,7 +57,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       const { existingUserId, provider, profile } = args
       // auth account already exists with provider
       if (existingUserId) {
-        return existingUserId as Id<"users">
+        return existingUserId
       }
       // anonymous user creation
       if (provider.id === "anon") {
@@ -101,8 +101,12 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       }
 
       // new user creation
+      const username =
+        profile.username ??
+        email?.split("@")[0]?.slice(0, 15) +
+          Math.random().toString(36).substring(2, 15)
       return await ctx.db.insert("users", {
-        username: profile.username as string | undefined,
+        username: username,
         isAnonymous: false,
         email: email,
         picture: profile.picture as string | undefined,

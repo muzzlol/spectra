@@ -1,6 +1,7 @@
 import { useAuthActions } from "@convex-dev/auth/react"
+import { useForm } from "@tanstack/react-form"
 import { Link } from "@tanstack/react-router"
-import { useState } from "react"
+import { useConvex } from "convex/react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -9,26 +10,23 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card"
+import { Field, FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { api } from "~/convex/_generated/api"
+import { usernameSchema } from "~/shared/validators/username"
 
 export function PlayGuest() {
   const { signIn } = useAuthActions()
-  const [username, setUsername] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const convex = useConvex()
 
-  const handleGuestJoin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!username.trim()) return
-    setIsLoading(true)
-
-    try {
-      await signIn("anon", { username })
-    } catch (error) {
-      console.error("Failed to create anon session", error)
-    } finally {
-      setIsLoading(false)
+  const form = useForm({
+    defaultValues: {
+      username: ""
+    },
+    onSubmit: async ({ value }) => {
+      await signIn("anon", { username: value.username })
     }
-  }
+  })
 
   return (
     <Card className="w-full max-w-sm bg-secondary-background/80 backdrop-blur-xl">
@@ -39,25 +37,78 @@ export function PlayGuest() {
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
-        <form onSubmit={handleGuestJoin} className="grid gap-4">
-          <div className="grid gap-2">
-            <Input
-              placeholder="Enter a username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="border-border bg-background"
-              minLength={2}
-              maxLength={20}
-              required
-            />
-          </div>
-          <Button
-            type="submit"
-            disabled={isLoading || !username.trim()}
-            variant="default"
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            form.handleSubmit()
+          }}
+          className="grid gap-4"
+        >
+          <form.Field
+            name="username"
+            validators={{
+              onChange: ({ value }) => {
+                const result = usernameSchema.shape.username.safeParse(value)
+                if (!result.success) {
+                  return { message: result.error.issues[0].message }
+                }
+                return undefined
+              },
+              onChangeAsyncDebounceMs: 400,
+              onChangeAsync: async ({ value }) => {
+                if (!value) return undefined
+                try {
+                  const isAvailable = await convex.query(
+                    api.users.isUsernameAvailable,
+                    {
+                      username: value
+                    }
+                  )
+                  if (!isAvailable) {
+                    return { message: "Username is already taken" }
+                  }
+                } catch (error) {
+                  console.error(error)
+                  return { message: "Error checking availability" }
+                }
+                return undefined
+              }
+            }}
           >
-            {isLoading ? "Joining..." : "Join as Guest"}
-          </Button>
+            {(field) => (
+              <Field>
+                <Input
+                  placeholder="Enter a username"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  className="border-border bg-background"
+                  required
+                />
+                {field.state.meta.isValidating ? (
+                  <div className="text-muted text-xs">
+                    Checking availability...
+                  </div>
+                ) : (
+                  <FieldError
+                    className="text-destructive text-xs"
+                    errors={field.state.meta.errors}
+                  />
+                )}
+              </Field>
+            )}
+          </form.Field>
+
+          <form.Subscribe
+            selector={(state) => [state.canSubmit, state.isSubmitting]}
+          >
+            {([canSubmit, isSubmitting]) => (
+              <Button type="submit" disabled={!canSubmit} variant="default">
+                {isSubmitting ? "Joining..." : "Join as Guest"}
+              </Button>
+            )}
+          </form.Subscribe>
         </form>
 
         <div className="relative">
