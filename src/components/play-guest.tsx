@@ -84,7 +84,6 @@ export function PlayGuest() {
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
                   className="border-border bg-background"
-                  required
                 />
                 {field.state.meta.isValidating ? (
                   <div className="text-muted text-xs">

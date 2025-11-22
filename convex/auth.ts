@@ -103,8 +103,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       // new user creation
       const username =
         profile.username ??
-        email?.split("@")[0]?.slice(0, 15) +
-          Math.random().toString(36).substring(2, 15)
+        `${email?.split("@")[0]?.slice(0, 15) ?? "user"}${Math.random().toString(36).substring(2, 15)}`
       return await ctx.db.insert("users", {
         username: username,
         isAnonymous: false,
