@@ -367,7 +367,6 @@ function JoinGameForm() {
         validators={{
           onChangeAsyncDebounceMs: 400,
           onChangeAsync: async ({ value }) => {
-            const currentValue = value
             setValidArenaId(null)
             // Silently skip if empty or bad format
             if (!value || !/^[a-zA-Z0-9]{10,50}$/.test(value)) {
@@ -377,7 +376,6 @@ function JoinGameForm() {
               await convex.query(api.arenas.get, {
                 arenaId: value as Id<"arenas">
               })
-              if (value !== currentValue) return undefined // ensure val no change during async validation
               setValidArenaId(value as Id<"arenas">)
               return undefined
             } catch {
