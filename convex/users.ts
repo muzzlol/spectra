@@ -86,7 +86,7 @@ export const isUsernameAvailable = query({
   returns: v.boolean(),
   handler: async (ctx, args) => {
     const parsed = usernameSchema.safeParse(args)
-    if (!parsed) {
+    if (!parsed.success) {
       return false
     }
     const existing = await ctx.db
