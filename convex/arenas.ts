@@ -11,6 +11,13 @@ export const create = mutation({
     prompt: v.string()
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx)
+    if (!userId) {
+      throw new ConvexError({
+        code: "UNAUTHORIZED",
+        message: "Not Authenticated"
+      })
+    }
     const arenaId = await ctx.db.insert("arenas", {
       type: args.type,
       mode: args.mode,

@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server"
 import { ConvexError, v } from "convex/values"
+import { parsedType } from "zod/v4/locales/en.cjs"
 import { usernameSchema } from "~/shared/validators/username"
 import type { QueryCtx } from "./_generated/server"
 import { mutation, query } from "./_generated/server"
@@ -84,6 +85,10 @@ export const isUsernameAvailable = query({
   args: { username: v.string() },
   returns: v.boolean(),
   handler: async (ctx, args) => {
+    const parsed = usernameSchema.safeParse(args)
+    if (!parsed) {
+      return false
+    }
     const existing = await ctx.db
       .query("users")
       .withIndex("by_username", (q) => q.eq("username", args.username))
