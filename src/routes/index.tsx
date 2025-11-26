@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { useTheme } from "next-themes"
 import { useState } from "react"
+import { BackgroundGrid } from "@/components/background-grid"
 import { GameForm } from "@/components/game-form"
 import {
   SchematicCanvas,
@@ -53,6 +54,7 @@ function Home() {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-background text-foreground transition-colors duration-300">
+      <BackgroundGrid />
       {/* Schematic Background */}
       <div className="absolute inset-0 z-0">
         <SchematicCanvas onStateChange={setSchematicState} />
@@ -81,17 +83,14 @@ function Home() {
       <main className="pointer-events-none relative z-10 flex min-h-screen w-full flex-col items-center justify-center p-4 md:p-8">
         <div className="pointer-events-auto mx-auto flex max-w-5xl flex-col items-center gap-8 border border-white/20 bg-black/60 p-8 backdrop-blur-md">
           {/* Header */}
-          <div className="mb-8 space-y-2 text-center">
-            <h1 className="font-bold text-6xl tracking-tighter">SPECTRA</h1>
-            <p className="text-xs uppercase tracking-[0.2em] opacity-70">
+          <div className="space-y-2 text-center">
+            <h1 className="font-bold text-4xl tracking-tighter">SPECTRA</h1>
+            {/* <p className="text-xs uppercase tracking-[0.2em] opacity-70">
               - yoooo -
-            </p>
+            </p> */}
           </div>
           <UserProfile user={user ?? null} />
           {user && <GameForm />}
-          <footer className="mt-16 text-center font-mono text-muted text-xs">
-            SYSTEMS ONLINE
-          </footer>
         </div>
       </main>
     </div>
