@@ -15,10 +15,10 @@ import {
 } from "@/geometry"
 import { NodeType, type SchematicLink, type SchematicNode } from "@/types"
 
-const NODE_COUNT_MIN = 20
-const NODE_COUNT_MAX = 35
-const WIDTH = 1600
-const HEIGHT = 900
+const NODE_COUNT_MIN = 35
+const NODE_COUNT_MAX = 50
+const WIDTH = 2400
+const HEIGHT = 1350
 
 interface Particle {
   id: string
@@ -170,7 +170,7 @@ export const SchematicCanvas: FC<{
         .map((n, _) => ({ node: n, dist: distance(nodeA, n), id: n.id }))
         .filter((n) => n.id !== nodeA.id)
         .sort((a, b) => a.dist - b.dist)
-        .slice(0, randomInt(1, 3)) // Connect to 1-3 nearest nodes
+        .slice(0, randomInt(2, 4)) // Connect to 2-4 nearest nodes
 
       neighbors.forEach((neighbor) => {
         // Avoid duplicate links
@@ -221,7 +221,7 @@ export const SchematicCanvas: FC<{
     // biome-ignore lint/a11y/noStaticElementInteractions: Background interaction
     <div
       onClick={handleCanvasClick}
-      className="relative flex h-screen w-full cursor-crosshair items-center justify-center overflow-hidden bg-background text-foreground"
+      className="relative flex h-screen w-full cursor-crosshair items-center justify-center overflow-hidden text-foreground"
     >
       <svg
         ref={svgRef}
