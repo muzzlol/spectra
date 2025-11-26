@@ -86,5 +86,6 @@ DB -->|"sync engine"| Cn
 
 ### Frontend
 - Tanstack Start: React meta-framework that provides a way to build out a good layout using router's functionality and invoking serverless functions that connect with websocket conn to our Durable Object containing game state (cf worker acts as proxy to forward conn from client->DO, and also sends initial html, css and js to clients). 
+- UI framework: shadcn/ui
 
 
