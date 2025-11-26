@@ -64,9 +64,11 @@ function PromptInput({ gameType, value, onChange }: PromptInputProps) {
     return (
       <Field>
         <FieldLabel>Reference Image</FieldLabel>
-        <div className="mb-2 flex gap-2">
+        <div className="mb-2 flex gap-2" role="tablist">
           <button
             type="button"
+            role="tab"
+            aria-selected={inputMode === "file"}
             onClick={() => setInputMode("file")}
             className={cn(
               "border-b-2 px-2 py-1 text-xs transition-colors",
@@ -79,6 +81,8 @@ function PromptInput({ gameType, value, onChange }: PromptInputProps) {
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={inputMode === "url"}
             onClick={() => setInputMode("url")}
             className={cn(
               "border-b-2 px-2 py-1 text-xs transition-colors",
@@ -99,6 +103,10 @@ function PromptInput({ gameType, value, onChange }: PromptInputProps) {
               accept="image/*"
               onChange={(e) => {
                 const file = e.target.files?.[0]
+                if (file && file.size > 10 * 1024 * 1024) {
+                  toast.error("Image must be less than 10MB")
+                  return
+                }
                 onChange({ type: "draw", imageFile: file, imageUrl: undefined })
               }}
               className="hidden"
@@ -359,15 +367,17 @@ function JoinGameForm() {
         validators={{
           onChangeAsyncDebounceMs: 400,
           onChangeAsync: async ({ value }) => {
+            const currentValue = value
             setValidArenaId(null)
             // Silently skip if empty or bad format
-            if (!value || !/^[a-z0-9]{20,40}$/.test(value)) {
+            if (!value || !/^[a-zA-Z0-9]{10,50}$/.test(value)) {
               return undefined
             }
             try {
               await convex.query(api.arenas.get, {
                 arenaId: value as Id<"arenas">
               })
+              if (value !== currentValue) return undefined // ensure val no change during async validation
               setValidArenaId(value as Id<"arenas">)
               return undefined
             } catch {
@@ -424,9 +434,11 @@ export function GameForm() {
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
-        <div className="flex border-border border-b">
+        <div className="flex border-border border-b" role="tablist">
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === "create"}
             onClick={() => setActiveTab("create")}
             className={cn(
               "flex-1 py-2 font-medium text-sm transition-colors",
@@ -439,6 +451,8 @@ export function GameForm() {
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === "join"}
             onClick={() => setActiveTab("join")}
             className={cn(
               "flex-1 py-2 font-medium text-sm transition-colors",
