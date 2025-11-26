@@ -1,5 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server"
-import { v } from "convex/values"
+import { ConvexError, v } from "convex/values"
+import { parsedType } from "zod/v4/locales/en.cjs"
+import { usernameSchema } from "~/shared/validators/username"
 import type { QueryCtx } from "./_generated/server"
 import { mutation, query } from "./_generated/server"
 
@@ -47,9 +49,19 @@ export const setUsername = mutation({
   args: { username: v.string() },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const parsed = usernameSchema.safeParse(args)
+    if (!parsed.success) {
+      throw new ConvexError({
+        code: "VALIDATION_ERROR",
+        message: parsed.error.issues[0].message
+      })
+    }
     const userId = await getAuthUserId(ctx)
     if (!userId) {
-      throw new Error("Not authenticated")
+      throw new ConvexError({
+        code: "UNAUTHORIZED",
+        message: "Not authenticated"
+      })
     }
 
     const existing = await ctx.db
@@ -57,7 +69,10 @@ export const setUsername = mutation({
       .withIndex("by_username", (q) => q.eq("username", args.username))
       .first()
     if (existing) {
-      throw new Error("Username already exists")
+      throw new ConvexError({
+        code: "CONFLICT",
+        message: "Username already exists"
+      })
     }
 
     await ctx.db.patch(userId, { username: args.username })
@@ -69,6 +84,10 @@ export const isUsernameAvailable = query({
   args: { username: v.string() },
   returns: v.boolean(),
   handler: async (ctx, args) => {
+    const parsed = usernameSchema.safeParse(args)
+    if (!parsed.success) {
+      return false
+    }
     const existing = await ctx.db
       .query("users")
       .withIndex("by_username", (q) => q.eq("username", args.username))
