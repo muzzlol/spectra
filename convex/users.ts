@@ -56,7 +56,6 @@ export const setUsername = mutation({
         message: parsed.error.issues[0].message
       })
     }
-    const { username } = parsed.data
     const userId = await getAuthUserId(ctx)
     if (!userId) {
       throw new ConvexError({
@@ -67,7 +66,7 @@ export const setUsername = mutation({
 
     const existing = await ctx.db
       .query("users")
-      .withIndex("by_username", (q) => q.eq("username", username))
+      .withIndex("by_username", (q) => q.eq("username", args.username))
       .first()
     if (existing) {
       throw new ConvexError({
@@ -76,7 +75,7 @@ export const setUsername = mutation({
       })
     }
 
-    await ctx.db.patch(userId, { username: username })
+    await ctx.db.patch(userId, { username: args.username })
     return null
   }
 })
