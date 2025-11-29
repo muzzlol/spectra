@@ -1,6 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server"
 import { ConvexError, v } from "convex/values"
-import { parsedType } from "zod/v4/locales/en.cjs"
 import { usernameSchema } from "~/shared/validators/username"
 import type { QueryCtx } from "./_generated/server"
 import { mutation, query } from "./_generated/server"

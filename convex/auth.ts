@@ -1,5 +1,5 @@
 import GitHub from "@auth/core/providers/github"
-import Google from "@auth/core/providers/google"
+// import Google from "@auth/core/providers/google"
 import Resend from "@auth/core/providers/resend"
 import { Anonymous } from "@convex-dev/auth/providers/Anonymous"
 import { convexAuth } from "@convex-dev/auth/server"

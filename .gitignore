@@ -17,6 +17,7 @@ node_modules
 /dist/
 /dist-ssr/
 .wrangler/
+.alchemy/
 
 # Sentry Config File
 .env.sentry-build-plugin

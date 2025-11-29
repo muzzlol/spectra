@@ -14,15 +14,15 @@ export const clearAllTables = mutation({
       "numbers"
     ] as const
 
-    type Tables = (typeof tables)[number]
+    // type Tables = (typeof tables)[number]
 
-    type IsExact = Tables extends TableNames
-      ? TableNames extends Tables
-        ? true
-        : false
-      : false
+    // type IsExact = Tables extends TableNames
+    //   ? TableNames extends Tables
+    //     ? true
+    //     : false
+    //   : false
 
-    type Check = IsExact
+    // type Check = IsExact
     for (const tableName of tables) {
       const docs = await ctx.db.query(tableName as TableNames).collect()
       for (const doc of docs) {
