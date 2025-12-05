@@ -7,4 +7,7 @@ export default class GameRoom extends DurableObject {
     super(ctx, env)
     this.#count = 1
   }
+  async fetch(request: Request) {
+    return new Response("Hello, world!")
+  }
 }

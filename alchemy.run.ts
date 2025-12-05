@@ -12,7 +12,6 @@ export const worker = await TanStackStart("WORKER", {
   name: "spectra",
   domains: ["spectra.muzzkhan.dev"],
   adopt: true,
-  entrypoint: "game-rooms/server.ts",
   bindings: {
     GAME_SERVER: gameRooms.id
   }

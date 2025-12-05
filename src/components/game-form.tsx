@@ -421,7 +421,7 @@ function JoinGameForm() {
 }
 
 export function GameForm() {
-  const [activeTab, setActiveTab] = useState<Tab>("create")
+  const [activeTab, setActiveTab] = useState<Tab>("join")
 
   return (
     <Card className="w-full max-w-md bg-secondary-background/80 backdrop-blur-xl">
@@ -436,20 +436,6 @@ export function GameForm() {
           <button
             type="button"
             role="tab"
-            aria-selected={activeTab === "create"}
-            onClick={() => setActiveTab("create")}
-            className={cn(
-              "flex-1 py-2 font-medium text-sm transition-colors",
-              activeTab === "create"
-                ? "border-foreground border-b-2 text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Create Game
-          </button>
-          <button
-            type="button"
-            role="tab"
             aria-selected={activeTab === "join"}
             onClick={() => setActiveTab("join")}
             className={cn(
@@ -461,9 +447,23 @@ export function GameForm() {
           >
             Join Game
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "create"}
+            onClick={() => setActiveTab("create")}
+            className={cn(
+              "flex-1 py-2 font-medium text-sm transition-colors",
+              activeTab === "create"
+                ? "border-foreground border-b-2 text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Create Game
+          </button>
         </div>
 
-        {activeTab === "create" ? <CreateGameForm /> : <JoinGameForm />}
+        {activeTab === "join" ? <JoinGameForm /> : <CreateGameForm />}
       </CardContent>
     </Card>
   )
