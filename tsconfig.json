@@ -6,7 +6,7 @@
     "jsx": "react-jsx",
     "module": "ESNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"],
+    "types": ["vite/client", "@cloudflare/workers-types", "./game-rooms/env.d.ts"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -21,13 +21,10 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "~/shared/*": ["./shared/*"],
-      "~/convex/_generated/*": ["./convex/_generated/*"]
+      "~/*": ["./*"]
     },
-
     "esModuleInterop": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
