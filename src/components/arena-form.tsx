@@ -1,4 +1,4 @@
-import { useForm } from "@tanstack/react-form"
+import { useForm, useStore } from "@tanstack/react-form"
 import { useConvex, useMutation } from "convex/react"
 import { useRef, useState } from "react"
 import { toast } from "sonner"
@@ -16,49 +16,65 @@ import { cn } from "@/lib/utils"
 import { api } from "~/convex/_generated/api"
 import type { Id } from "~/convex/_generated/dataModel"
 
-type GameType = "draw" | "code" | "typing"
-type GameMode = "solo" | "pvp" | "duo"
-type Tab = "create" | "join"
+import {
+  type ArenaMode,
+  type ArenaType,
+  MODE_CONFIG,
+  TYPE_CONFIG
+} from "~/shared/schema/arena"
 
-const GAME_TYPES: { value: GameType; label: Capitalize<GameType> }[] = [
-  { value: "draw", label: "Draw" },
-  { value: "code", label: "Code" },
-  { value: "typing", label: "Typing" }
-]
+const ARENA_TYPES: { value: ArenaType; label: Capitalize<ArenaType> }[] =
+  Object.entries(TYPE_CONFIG).map(([value, { label }]) => ({
+    value: value as ArenaType,
+    label
+  }))
 
-const GAME_MODES: {
-  value: GameMode
-  label: Capitalize<GameMode> | string
+const ARENA_MODES: {
+  value: ArenaMode
+  label: Capitalize<ArenaMode> | string
   maxPlayers: number
-}[] = [
-  { value: "solo", label: "Solo", maxPlayers: 1 },
-  { value: "pvp", label: "PvP", maxPlayers: 4 },
-  { value: "duo", label: "Duo (2v2)", maxPlayers: 4 }
-]
-
-const selectStyles = cn(
-  "flex h-10 w-full rounded-none border-input border-b bg-transparent px-3 py-2 text-sm",
-  "ring-offset-background focus-visible:border-foreground focus-visible:outline-none",
-  "font-mono disabled:cursor-not-allowed disabled:opacity-50"
+  minPlayers: number
+  showPlayerInput: boolean
+}[] = Object.entries(MODE_CONFIG).map(
+  ([value, { label, maxPlayers, minPlayers, showPlayerInput }]) => ({
+    value: value as ArenaMode,
+    label,
+    maxPlayers,
+    minPlayers,
+    showPlayerInput
+  })
 )
 
-// Prompt input types
+const DFT_TIME_LIMIT = 300
+
+type Tab = "create" | "join"
 type PromptValue =
   | { type: "draw"; imageFile?: File; imageUrl?: string }
   | { type: "code"; text: string }
   | { type: "typing"; text: string }
 
 interface PromptInputProps {
-  gameType: GameType
+  arenaType: ArenaType
   value: PromptValue
   onChange: (value: PromptValue) => void
 }
 
-function PromptInput({ gameType, value, onChange }: PromptInputProps) {
+// shared select styles
+const selectStyles = cn(
+  "flex h-10 w-full rounded-none border-input border-b bg-transparent px-3 py-2 text-sm",
+  "ring-offset-background focus-visible:border-foreground focus-visible:outline-none",
+  "font-mono disabled:cursor-not-allowed disabled:opacity-50"
+)
+
+function PromptInput({
+  arenaType: ArenaType,
+  value,
+  onChange
+}: PromptInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [inputMode, setInputMode] = useState<"file" | "url">("file")
 
-  if (gameType === "draw") {
+  if (ArenaType === "draw") {
     const drawValue = value.type === "draw" ? value : { type: "draw" as const }
 
     return (
@@ -149,40 +165,40 @@ function PromptInput({ gameType, value, onChange }: PromptInputProps) {
   }
 
   // Code and Typing: placeholder for now
-  const textValue = value.type === gameType && "text" in value ? value.text : ""
+  const textValue =
+    value.type === ArenaType && "text" in value ? value.text : ""
 
   return (
     <Field>
       <FieldLabel>
-        {gameType === "code" ? "Challenge" : "Text Prompt"}
+        {ArenaType === "code" ? "Challenge" : "Text Prompt"}
       </FieldLabel>
       <Input
-        placeholder={gameType === "code" ? "Coming soon..." : "Coming soon..."}
+        placeholder={ArenaType === "code" ? "Coming soon..." : "Coming soon..."}
         value={textValue}
         onChange={(e) =>
-          onChange({ type: gameType, text: e.target.value } as PromptValue)
+          onChange({ type: ArenaType, text: e.target.value } as PromptValue)
         }
         disabled
         className="border-border bg-background"
       />
       <p className="text-muted-foreground text-xs">
-        {gameType === "code" ? "Code challenges" : "Typing tests"} coming soon
+        {ArenaType === "code" ? "Code challenges" : "Typing tests"} coming soon
       </p>
     </Field>
   )
 }
 
-function CreateGameForm() {
+function CreateArenaForm() {
   const createArena = useMutation(api.arenas.create)
-  const [currentType, setCurrentType] = useState<GameType>("draw")
   const [promptValue, setPromptValue] = useState<PromptValue>({ type: "draw" })
 
   const form = useForm({
     defaultValues: {
-      type: "draw" as GameType,
-      mode: "pvp" as GameMode,
-      maxPlayers: 4,
-      timeLimit: 300
+      type: "draw" as ArenaType,
+      mode: "pvp" as ArenaMode,
+      maxPlayers: MODE_CONFIG.pvp.maxPlayers,
+      timeLimit: DFT_TIME_LIMIT
     },
     onSubmit: async ({ value }) => {
       try {
@@ -211,6 +227,24 @@ function CreateGameForm() {
     }
   })
 
+  const currentType = useStore(form.store, (state) => state.values.type)
+  const currentMode = useStore(form.store, (state) => state.values.mode)
+
+  const typeConfig = TYPE_CONFIG[currentType]
+  const modeConfig = MODE_CONFIG[currentMode]
+
+  const playerCounts = modeConfig.showPlayerInput
+    ? Array.from(
+        { length: modeConfig.maxPlayers - modeConfig.minPlayers + 1 },
+        (_, i) => i + modeConfig.minPlayers
+      )
+    : []
+
+  const rowLayout =
+    modeConfig.showPlayerInput && typeConfig.showTimer
+      ? "grid-cols-2"
+      : "grid-cols-1"
+
   return (
     <form
       onSubmit={(e) => {
@@ -229,14 +263,19 @@ function CreateGameForm() {
               <select
                 value={field.state.value}
                 onChange={(e) => {
-                  const newType = e.target.value as GameType
+                  const newType = e.target.value as ArenaType
                   field.handleChange(newType)
-                  setCurrentType(newType)
                   setPromptValue({ type: newType } as PromptValue)
+                  if (newType === "code") {
+                    form.setFieldValue("timeLimit", 0)
+                  }
+                  if (newType !== "code" && form.state.values.timeLimit === 0) {
+                    form.setFieldValue("timeLimit", DFT_TIME_LIMIT)
+                  }
                 }}
                 className={selectStyles}
               >
-                {GAME_TYPES.map((type) => (
+                {ARENA_TYPES.map((type) => (
                   <option key={type.value} value={type.value}>
                     {type.label}
                   </option>
@@ -250,9 +289,9 @@ function CreateGameForm() {
           name="mode"
           listeners={{
             onChange: ({ value }) => {
-              const modeConfig = GAME_MODES.find((m) => m.value === value)
-              if (modeConfig) {
-                form.setFieldValue("maxPlayers", modeConfig.maxPlayers)
+              const newMode = MODE_CONFIG[value]
+              if (newMode) {
+                form.setFieldValue("maxPlayers", newMode.maxPlayers)
               }
             }
           }}
@@ -262,10 +301,12 @@ function CreateGameForm() {
               <FieldLabel className="text-xs">Mode</FieldLabel>
               <select
                 value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value as GameMode)}
+                onChange={(e) =>
+                  field.handleChange(e.target.value as ArenaMode)
+                }
                 className={selectStyles}
               >
-                {GAME_MODES.map((mode) => (
+                {ARENA_MODES.map((mode) => (
                   <option key={mode.value} value={mode.value}>
                     {mode.label}
                   </option>
@@ -277,44 +318,51 @@ function CreateGameForm() {
       </div>
 
       {/* Players & Time row */}
-      <div className="grid grid-cols-2 gap-3">
-        <form.Field name="maxPlayers">
-          {(field) => (
-            <Field>
-              <FieldLabel className="text-xs">Players</FieldLabel>
-              <Input
-                type="number"
-                min={1}
-                max={4}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(Number(e.target.value))}
-                className="border-border bg-background"
-              />
-            </Field>
-          )}
-        </form.Field>
+      <div className={cn("grid gap-3", rowLayout)}>
+        {modeConfig.showPlayerInput && (
+          <form.Field name="maxPlayers">
+            {(field) => (
+              <Field>
+                <FieldLabel className="text-xs">Players</FieldLabel>
+                <select
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(Number(e.target.value))}
+                  className={selectStyles}
+                >
+                  {playerCounts.map((count) => (
+                    <option key={count} value={count}>
+                      {count} player{count > 1 ? "s" : ""}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
+          </form.Field>
+        )}
 
-        <form.Field name="timeLimit">
-          {(field) => (
-            <Field>
-              <FieldLabel className="text-xs">Time (sec)</FieldLabel>
-              <Input
-                type="number"
-                min={60}
-                max={3600}
-                step={60}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(Number(e.target.value))}
-                className="border-border bg-background"
-              />
-            </Field>
-          )}
-        </form.Field>
+        {typeConfig.showTimer && (
+          <form.Field name="timeLimit">
+            {(field) => (
+              <Field>
+                <FieldLabel className="text-xs">Time (sec)</FieldLabel>
+                <Input
+                  type="number"
+                  min={60}
+                  max={3600}
+                  step={60}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(Number(e.target.value))}
+                  className="border-border bg-background"
+                />
+              </Field>
+            )}
+          </form.Field>
+        )}
       </div>
 
       {/* Prompt input */}
       <PromptInput
-        gameType={currentType}
+        arenaType={currentType}
         value={promptValue}
         onChange={setPromptValue}
       />
@@ -332,7 +380,7 @@ function CreateGameForm() {
   )
 }
 
-function JoinGameForm() {
+function JoinArenaForm() {
   const convex = useConvex()
   const [validArenaId, setValidArenaId] = useState<Id<"arenas"> | null>(null)
 
@@ -420,7 +468,7 @@ function JoinGameForm() {
   )
 }
 
-export function GameForm() {
+export function ArenaForm() {
   const [activeTab, setActiveTab] = useState<Tab>("join")
 
   return (
@@ -428,7 +476,7 @@ export function GameForm() {
       <CardHeader>
         <CardTitle className="text-center text-2xl">Arena</CardTitle>
         <CardDescription className="text-center">
-          Create a new game or join an existing one
+          Create a new arena or join an existing one
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
@@ -445,7 +493,7 @@ export function GameForm() {
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            Join Game
+            Join arena
           </button>
           <button
             type="button"
@@ -459,11 +507,11 @@ export function GameForm() {
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            Create Game
+            Create arena
           </button>
         </div>
 
-        {activeTab === "join" ? <JoinGameForm /> : <CreateGameForm />}
+        {activeTab === "join" ? <JoinArenaForm /> : <CreateArenaForm />}
       </CardContent>
     </Card>
   )

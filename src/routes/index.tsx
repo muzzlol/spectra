@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { useTheme } from "next-themes"
 import { useState } from "react"
+import { ArenaForm } from "@/components/arena-form"
 import { BackgroundGrid } from "@/components/background-grid"
-import { GameForm } from "@/components/game-form"
 import {
   SchematicCanvas,
   type SchematicCanvasRef
@@ -90,7 +90,7 @@ function Home() {
             </p> */}
           </div>
           <UserProfile user={user ?? null} />
-          {user && <GameForm />}
+          {user && <ArenaForm />}
         </div>
       </main>
     </div>

@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers"
+import { request } from "http"
 import type { WorkerEnv } from "./env"
 export default class GameRoom extends DurableObject {
   declare env: WorkerEnv
@@ -7,7 +8,5 @@ export default class GameRoom extends DurableObject {
     super(ctx, env)
     this.#count = 1
   }
-  async fetch(request: Request) {
-    return new Response("Hello, world!")
-  }
+  async fetch(request: Request) {}
 }

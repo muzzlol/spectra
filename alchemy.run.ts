@@ -3,8 +3,8 @@ import { DurableObjectNamespace, TanStackStart } from "alchemy/cloudflare"
 
 const app = await alchemy("spectra")
 
-export const gameRooms = await DurableObjectNamespace("GAME-ROOMS", {
-  className: "GameRoom",
+export const arenas = await DurableObjectNamespace("ARENAS", {
+  className: "Arena",
   environment: "prod"
 })
 
@@ -13,7 +13,7 @@ export const worker = await TanStackStart("WORKER", {
   domains: ["spectra.muzzkhan.dev"],
   adopt: true,
   bindings: {
-    GAME_SERVER: gameRooms.id
+    ARENAS: arenas.id
   }
 })
 console.log({
