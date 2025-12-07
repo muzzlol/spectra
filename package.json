@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "bunx convex dev --once && concurrently -r bun:dev:web bun:dev:convex",
-    "dev:web": "bunx alchemy dev",
+    "dev:web": "bunx alchemy dev --env-file .env.local",
     "dev:convex": "bunx convex dev",
     "build": "vite build && tsc --noEmit",
     "preview": "vite preview",
-    "deploy": "bunx alchemy deploy",
+    "deploy": "bunx alchemy deploy --env-file .env.prod",
     "cf-typegen": "wrangler types",
     "format": "biome format --write .",
     "lint": "biome lint --write"
