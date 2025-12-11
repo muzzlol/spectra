@@ -3,6 +3,7 @@ import {
   type MouseEvent,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState
 } from "react"
@@ -15,8 +16,8 @@ import {
 } from "@/geometry"
 import { NodeType, type SchematicLink, type SchematicNode } from "@/types"
 
-const NODE_COUNT_MIN = 35
-const NODE_COUNT_MAX = 50
+const NODE_COUNT_MIN = 70
+const NODE_COUNT_MAX = 90
 const WIDTH = 2400
 const HEIGHT = 1350
 
@@ -38,12 +39,27 @@ export interface SchematicCanvasRef {
 
 export const SchematicCanvas: FC<{
   onStateChange?: (state: SchematicCanvasRef) => void
-}> = ({ onStateChange }) => {
+  introAnimation?: {
+    enabled?: boolean
+    durationMs?: number
+    steps?: number
+  }
+}> = ({ onStateChange, introAnimation }) => {
   const [nodes, setNodes] = useState<SchematicNode[]>([])
   const [links, setLinks] = useState<SchematicLink[]>([])
   const [particles, setParticles] = useState<Particle[]>([])
   const svgRef = useRef<SVGSVGElement>(null)
   const animationFrameRef = useRef<number>(0)
+  const introTimeoutsRef = useRef<number[]>([])
+
+  const introConfig = useMemo(
+    () => ({
+      enabled: introAnimation?.enabled ?? true,
+      durationMs: introAnimation?.durationMs ?? 2000,
+      steps: Math.max(1, introAnimation?.steps ?? 4)
+    }),
+    [introAnimation]
+  )
 
   // Particle Animation Loop
   useEffect(() => {
@@ -111,8 +127,15 @@ export const SchematicCanvas: FC<{
     setParticles((prev) => [...prev, ...newParticles])
   }, [])
 
+  const clearIntroTimers = useCallback(() => {
+    introTimeoutsRef.current.forEach((id) => {
+      clearTimeout(id)
+    })
+    introTimeoutsRef.current = []
+  }, [])
+
   // Generation Logic
-  const generateSchematic = useCallback(() => {
+  const createSchematic = useCallback((): SchematicCanvasRef => {
     const newNodes: SchematicNode[] = []
     const newLinks: SchematicLink[] = []
 
@@ -190,11 +213,67 @@ export const SchematicCanvas: FC<{
       })
     })
 
-    setNodes(newNodes)
-    setLinks(newLinks)
     const id = Date.now().toString().slice(-6)
-    onStateChange?.({ nodes: newNodes, links: newLinks, genId: id })
-  }, [onStateChange])
+    return { nodes: newNodes, links: newLinks, genId: id }
+  }, [])
+
+  const applySchematic = useCallback(
+    (schematic: SchematicCanvasRef) => {
+      setNodes(schematic.nodes)
+      setLinks(schematic.links)
+      onStateChange?.(schematic)
+    },
+    [onStateChange]
+  )
+
+  const runIntroSequence = useCallback(
+    (schematic: SchematicCanvasRef) => {
+      clearIntroTimers()
+
+      if (
+        !introConfig.enabled ||
+        introConfig.steps <= 1 ||
+        introConfig.durationMs <= 0
+      ) {
+        applySchematic(schematic)
+        return
+      }
+
+      const stepCount = introConfig.steps
+      const interval = introConfig.durationMs / stepCount
+
+      for (let step = 1; step <= stepCount; step++) {
+        const timeoutId = window.setTimeout(() => {
+          const nodeLimit = Math.ceil(
+            (step / stepCount) * schematic.nodes.length
+          )
+          const visibleNodes = schematic.nodes.slice(0, nodeLimit)
+          const visibleNodeIds = new Set(visibleNodes.map((n) => n.id))
+          const visibleLinks = schematic.links.filter(
+            (l) => visibleNodeIds.has(l.source) && visibleNodeIds.has(l.target)
+          )
+
+          setNodes(visibleNodes)
+          setLinks(visibleLinks)
+
+          if (step === stepCount) {
+            onStateChange?.(schematic)
+          }
+        }, step * interval)
+
+        introTimeoutsRef.current.push(timeoutId)
+      }
+    },
+    [applySchematic, clearIntroTimers, introConfig, onStateChange]
+  )
+
+  const cancelIntroAndApply = useCallback(
+    (schematic: SchematicCanvasRef) => {
+      clearIntroTimers()
+      applySchematic(schematic)
+    },
+    [applySchematic, clearIntroTimers]
+  )
 
   const handleCanvasClick = useCallback(
     (e: MouseEvent) => {
@@ -207,14 +286,21 @@ export const SchematicCanvas: FC<{
         )
         spawnParticles(svgPoint.x, svgPoint.y)
       }
-      generateSchematic()
+
+      const schematic = createSchematic()
+      cancelIntroAndApply(schematic)
     },
-    [generateSchematic, spawnParticles]
+    [cancelIntroAndApply, createSchematic, spawnParticles]
   )
 
   useEffect(() => {
-    generateSchematic()
-  }, [generateSchematic])
+    const schematic = createSchematic()
+    runIntroSequence(schematic)
+
+    return () => {
+      clearIntroTimers()
+    }
+  }, [clearIntroTimers, createSchematic, runIntroSequence])
 
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: Background interaction

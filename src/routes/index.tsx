@@ -18,7 +18,8 @@ import { UserProfile } from "@/components/user-profile"
 import { api } from "~/convex/_generated/api"
 
 export const Route = createFileRoute("/")({
-  component: Home
+  component: Home,
+  ssr: false // website fully in SPA mode
 })
 
 function Home() {
