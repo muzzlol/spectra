@@ -62,7 +62,7 @@ type PromptValue =
   | { type: "typing"; text: string }
 
 interface PromptInputProps {
-  arenaType: ArenaType
+  ArenaType: ArenaType
   value: PromptValue
   onChange: (value: PromptValue) => void
 }
@@ -74,11 +74,7 @@ const selectStyles = cn(
   "font-mono disabled:cursor-not-allowed disabled:opacity-50"
 )
 
-function PromptInput({
-  arenaType: ArenaType,
-  value,
-  onChange
-}: PromptInputProps) {
+function PromptInput({ ArenaType, value, onChange }: PromptInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [inputMode, setInputMode] = useState<"file" | "url">("file")
 
@@ -371,7 +367,7 @@ function CreateArenaForm() {
 
       {/* Prompt input */}
       <PromptInput
-        arenaType={currentType}
+        ArenaType={currentType}
         value={promptValue}
         onChange={setPromptValue}
       />

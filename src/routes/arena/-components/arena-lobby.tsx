@@ -79,8 +79,16 @@ export function ArenaLobby({
     }
   }
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href)
+  const handleCopyLink = async () => {
+    const success = await navigator.clipboard
+      .writeText(window.location.href)
+      .then(() => true)
+      .catch(() => false)
+
+    if (!success) {
+      toast.error("Failed to copy link to clipboard")
+    }
+
     toast.success("Link copied to clipboard!")
   }
 

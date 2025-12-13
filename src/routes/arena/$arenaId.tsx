@@ -35,7 +35,7 @@ function Arena() {
     canStart,
     canLeave,
     playersNeeded
-  } = useArena(arenaId as Id<"arenas">)
+  } = useArena(arenaId)
 
   if (isUserLoading) {
     return (
@@ -53,7 +53,7 @@ function Arena() {
     case "lobby":
       return (
         <ArenaLobby
-          arenaId={arenaId as Id<"arenas">}
+          arenaId={arenaId}
           type={arena.type}
           mode={arena.mode}
           maxPlayers={arena.settings.maxPlayers}
@@ -69,7 +69,7 @@ function Arena() {
     case "active":
       return (
         <ArenaActive
-          arenaId={arenaId as Id<"arenas">}
+          arenaId={arenaId}
           type={arena.type}
           mode={arena.mode}
           maxPlayers={arena.settings.maxPlayers}
@@ -80,7 +80,7 @@ function Arena() {
     case "ended":
       return (
         <ArenaEnded
-          arenaId={arenaId as Id<"arenas">}
+          arenaId={arenaId}
           type={arena.type}
           mode={arena.mode}
           maxPlayers={arena.settings.maxPlayers}
