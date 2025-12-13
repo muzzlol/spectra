@@ -1,5 +1,5 @@
 import { convexQuery } from "@convex-dev/react-query"
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
+import { useSuspenseQuery } from "@tanstack/react-query"
 import { useCurrentUser } from "@/hooks/use-user"
 import { api } from "~/convex/_generated/api"
 import type { Id } from "~/convex/_generated/dataModel"
@@ -17,7 +17,9 @@ export function useArena(arenaId: Id<"arenas">) {
     : false
 
   const currentPlayerCount = arena.participants.length
-  const arenaCfg = MODE_CONFIG[arena.mode]
+
+  const minPlayers = MODE_CONFIG[arena.mode].minPlayers
+  const maxPlayers = arena.settings.maxPlayers
 
   return {
     arena,
@@ -29,19 +31,19 @@ export function useArena(arenaId: Id<"arenas">) {
     canStart:
       isHost &&
       arena.status === "lobby" &&
-      currentPlayerCount >= arenaCfg.minPlayers &&
-      currentPlayerCount <= arenaCfg.maxPlayers,
+      currentPlayerCount >= minPlayers &&
+      currentPlayerCount <= maxPlayers,
 
     canJoin:
       !isParticipant &&
       arena.status === "lobby" &&
-      currentPlayerCount < arenaCfg.maxPlayers,
+      currentPlayerCount < maxPlayers,
 
     canLeave: isParticipant && arena.status === "lobby",
 
-    playerNeeded: Math.max(0, arenaCfg.minPlayers - currentPlayerCount),
+    playersNeeded: Math.max(0, minPlayers - currentPlayerCount),
 
-    isFull: currentPlayerCount >= arena.settings.maxPlayers,
+    isFull: currentPlayerCount >= maxPlayers,
 
     timeLeft: arena.startedAt
       ? arena.settings.timeLimit * 1000 - (Date.now() - arena.startedAt)
