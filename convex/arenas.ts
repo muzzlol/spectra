@@ -59,6 +59,7 @@ export const get = query({
   args: { arenaId: v.id("arenas") },
   returns: v.object({
     _id: v.id("arenas"),
+    _creationTime: v.number(),
     hostId: v.id("users"),
     isPublic: v.boolean(),
     status: v.union(

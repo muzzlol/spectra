@@ -1,4 +1,5 @@
 import { useForm, useStore } from "@tanstack/react-form"
+import { useNavigate } from "@tanstack/react-router"
 import { useConvex, useMutation } from "convex/react"
 import { useRef, useState } from "react"
 import { toast } from "sonner"
@@ -198,6 +199,7 @@ function PromptInput({
 
 function CreateArenaForm() {
   const createArena = useMutation(api.arenas.create)
+  const navigate = useNavigate()
   const [promptValue, setPromptValue] = useState<PromptValue>({ type: "draw" })
 
   const form = useForm({
@@ -222,11 +224,11 @@ function CreateArenaForm() {
           mode: value.mode,
           maxPlayers: value.maxPlayers,
           timeLimit: value.timeLimit,
+          isPublic: false,
           prompt
         })
         toast.success("Arena created!")
-        console.log("Created arena:", arenaId)
-        // TODO: Navigate to arena or connect to DO
+        navigate({ to: "/arena/$arenaId", params: { arenaId } })
       } catch (error) {
         toast.error("Failed to create arena")
         console.error(error)
