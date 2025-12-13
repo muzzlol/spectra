@@ -4,7 +4,7 @@ import { DurableObjectNamespace, TanStackStart } from "alchemy/cloudflare"
 const app = await alchemy("spectra")
 
 export const arenas = await DurableObjectNamespace("ARENAS", {
-  className: "Arena",
+  className: "ArenaWSS",
   environment: "prod"
 })
 
