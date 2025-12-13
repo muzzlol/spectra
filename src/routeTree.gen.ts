@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthPathnameRouteImport } from './routes/auth/$pathname'
+import { Route as ArenaArenaIdRouteImport } from './routes/arena/$arenaId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,30 +23,39 @@ const AuthPathnameRoute = AuthPathnameRouteImport.update({
   path: '/auth/$pathname',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ArenaArenaIdRoute = ArenaArenaIdRouteImport.update({
+  id: '/arena/$arenaId',
+  path: '/arena/$arenaId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/arena/$arenaId': typeof ArenaArenaIdRoute
   '/auth/$pathname': typeof AuthPathnameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/arena/$arenaId': typeof ArenaArenaIdRoute
   '/auth/$pathname': typeof AuthPathnameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/arena/$arenaId': typeof ArenaArenaIdRoute
   '/auth/$pathname': typeof AuthPathnameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth/$pathname'
+  fullPaths: '/' | '/arena/$arenaId' | '/auth/$pathname'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth/$pathname'
-  id: '__root__' | '/' | '/auth/$pathname'
+  to: '/' | '/arena/$arenaId' | '/auth/$pathname'
+  id: '__root__' | '/' | '/arena/$arenaId' | '/auth/$pathname'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ArenaArenaIdRoute: typeof ArenaArenaIdRoute
   AuthPathnameRoute: typeof AuthPathnameRoute
 }
 
@@ -65,11 +75,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthPathnameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/arena/$arenaId': {
+      id: '/arena/$arenaId'
+      path: '/arena/$arenaId'
+      fullPath: '/arena/$arenaId'
+      preLoaderRoute: typeof ArenaArenaIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ArenaArenaIdRoute: ArenaArenaIdRoute,
   AuthPathnameRoute: AuthPathnameRoute,
 }
 export const routeTree = rootRouteImport

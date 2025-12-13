@@ -1,6 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server"
-import { ConvexError, v } from "convex/values"
+import { ConvexError, convexToJson, v } from "convex/values"
+import { internal } from "./_generated/api"
 import { internalMutation, mutation, query } from "./_generated/server"
+import { MODE_CONFIG } from "./schema/arena"
 
 export const create = mutation({
   args: {
@@ -8,6 +10,7 @@ export const create = mutation({
     mode: v.union(v.literal("solo"), v.literal("pvp"), v.literal("duo")),
     maxPlayers: v.number(),
     timeLimit: v.number(),
+    isPublic: v.boolean(),
     prompt: v.string()
   },
   handler: async (ctx, args) => {
@@ -18,7 +21,25 @@ export const create = mutation({
         message: "Not Authenticated"
       })
     }
+    const modeConfig = MODE_CONFIG[args.mode]
+    if (
+      modeConfig.minPlayers > args.maxPlayers ||
+      args.maxPlayers > modeConfig.maxPlayers
+    ) {
+      throw new ConvexError({
+        code: "BAD_REQUEST",
+        message: "Invalid player count",
+        data: {
+          minPlayers: modeConfig.minPlayers,
+          maxPlayers: modeConfig.maxPlayers,
+          currentPlayers: args.maxPlayers
+        }
+      })
+    }
     const arenaId = await ctx.db.insert("arenas", {
+      hostId: userId,
+      isPublic: args.isPublic,
+      status: "lobby",
       type: args.type,
       mode: args.mode,
       settings: {
@@ -26,7 +47,7 @@ export const create = mutation({
         timeLimit: args.timeLimit,
         prompt: args.prompt
       },
-      participants: []
+      participants: [userId]
     })
     return arenaId
   }
@@ -58,12 +79,14 @@ export const join = mutation({
     const arena = await ctx.db.get(args.arenaId)
     if (!arena)
       throw new ConvexError({ code: "NOT_FOUND", message: "Arena not found" })
-    if (arena.endedAt)
-      throw new ConvexError({ code: "BAD_REQUEST", message: "Game ended" })
-    if (arena.startedAt)
-      throw new ConvexError({ code: "BAD_REQUEST", message: "Game started" })
+    if (arena.status !== "lobby")
+      throw new ConvexError({
+        code: "BAD_REQUEST",
+        message:
+          arena.status === "active" ? "Arena is in progress" : "Arena ended"
+      })
 
-    if (arena.participants.includes(userId)) return
+    if (arena.participants.includes(userId)) return arena._id
 
     if (arena.participants.length >= arena.settings.maxPlayers) {
       throw new ConvexError({
@@ -82,16 +105,148 @@ export const join = mutation({
   }
 })
 
-export const markActive = internalMutation({
+export const leave = mutation({
   args: { arenaId: v.id("arenas") },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.arenaId, { startedAt: Date.now() })
+    const userId = await getAuthUserId(ctx)
+    if (!userId)
+      throw new ConvexError({
+        code: "UNAUTHORIZED",
+        message: "Not Authenticated"
+      })
+
+    const arena = await ctx.db.get(args.arenaId)
+    if (!arena)
+      throw new ConvexError({ code: "NOT_FOUND", message: "Arena not found" })
+    if (!arena.participants.includes(userId))
+      throw new ConvexError({
+        code: "BAD_REQUEST",
+        message: "You are not a participant of this arena"
+      })
+    if (arena.hostId === userId && arena.status === "lobby") {
+      await ctx.db.patch(args.arenaId, { status: "ended", endedAt: Date.now() })
+      return
+    }
+    await ctx.db.patch(args.arenaId, {
+      participants: arena.participants.filter((id) => id !== userId)
+    })
+  }
+})
+
+export const start = mutation({
+  args: { arenaId: v.id("arenas") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx)
+    if (!userId)
+      throw new ConvexError({
+        code: "UNAUTHORIZED",
+        message: "Not Authenticated"
+      })
+    const arena = await ctx.db.get(args.arenaId)
+    if (!arena)
+      throw new ConvexError({ code: "NOT_FOUND", message: "Arena not found" })
+    if (arena.hostId !== userId)
+      throw new ConvexError({
+        code: "BAD_REQUEST",
+        message: "You are not the host of this arena"
+      })
+    if (arena.status !== "lobby")
+      throw new ConvexError({
+        code: "BAD_REQUEST",
+        message: "Arena is not in lobby"
+      })
+    const modeConfig = MODE_CONFIG[arena.mode]
+    if (arena.participants.length < modeConfig.minPlayers)
+      throw new ConvexError({
+        code: "BAD_REQUEST",
+        message: "Not enough players to start the arena"
+      })
+
+    const durationMs = arena.settings.timeLimit * 1000
+    await ctx.scheduler.runAfter(durationMs, internal.arenas.markEnded, {
+      arenaId: args.arenaId
+    })
+
+    await ctx.db.patch(args.arenaId, {
+      status: "active",
+      startedAt: Date.now()
+    })
+  }
+})
+
+export const listOpenLobbies = query({
+  args: {
+    paginationOpts: v.object({
+      cursor: v.optional(v.string()),
+      numItems: v.number()
+    })
+  },
+  handler: async (ctx, args) => {
+    const pagination = await ctx.db
+      .query("arenas")
+      .withIndex("by_public_status", (q) =>
+        q.eq("isPublic", true).eq("status", "lobby")
+      )
+      .paginate({
+        cursor: args.paginationOpts.cursor ?? null,
+        numItems: args.paginationOpts.numItems
+      })
+    const openLobbies = pagination.page
+
+    const openLobbiesWithHost = await Promise.all(
+      openLobbies.map(async (lobby) => {
+        const host = await ctx.db.get(lobby.hostId)
+        if (!host) return null
+        return {
+          ...lobby,
+          hostName: host.username ?? "Unknown"
+        }
+      })
+    ).then((lobbies) =>
+      lobbies.filter((l): l is NonNullable<typeof l> => l !== null)
+    )
+
+    return {
+      openLobbiesWithHost,
+      continueCursor: pagination.continueCursor,
+      isDone: pagination.isDone
+    }
+  }
+})
+
+export const getParticipants = query({
+  args: { arenaId: v.id("arenas") },
+  handler: async (ctx, args) => {
+    const arena = await ctx.db.get(args.arenaId)
+    if (!arena)
+      throw new ConvexError({ code: "NOT_FOUND", message: "Arena not found" })
+
+    const participants = await Promise.all(
+      arena.participants.map(async (participantId) => {
+        const participant = await ctx.db.get(participantId)
+        if (!participant) return null
+        return {
+          _id: participant._id,
+          username: participant.username
+        }
+      })
+    )
+    return {
+      participants: participants.filter(
+        (p): p is NonNullable<typeof p> => p !== null
+      ),
+      hostId: arena.hostId
+    }
   }
 })
 
 export const markEnded = internalMutation({
   args: { arenaId: v.id("arenas") },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.arenaId, { endedAt: Date.now() })
+    const arena = await ctx.db.get(args.arenaId)
+    if (!arena || arena.status === "ended") {
+      return
+    }
+    await ctx.db.patch(args.arenaId, { status: "ended", endedAt: Date.now() })
   }
 })

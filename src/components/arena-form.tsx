@@ -15,13 +15,20 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { api } from "~/convex/_generated/api"
 import type { Id } from "~/convex/_generated/dataModel"
-
 import {
   type ArenaMode,
   type ArenaType,
-  MODE_CONFIG,
-  TYPE_CONFIG
-} from "~/shared/schema/arena"
+  MODE_CONFIG
+} from "~/convex/schema/arena"
+
+export const TYPE_CONFIG: Record<
+  ArenaType,
+  { label: Capitalize<ArenaType>; showTimer: boolean }
+> = {
+  draw: { label: "Draw", showTimer: true },
+  code: { label: "Code", showTimer: false },
+  typing: { label: "Typing", showTimer: true }
+}
 
 const ARENA_TYPES: { value: ArenaType; label: Capitalize<ArenaType> }[] =
   Object.entries(TYPE_CONFIG).map(([value, { label }]) => ({
