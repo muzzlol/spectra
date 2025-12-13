@@ -7,18 +7,18 @@ const app = await alchemy("spectra", {
   stateStore: (scope) => new CloudflareStateStore(scope)
 })
 
-export const arenas = await DurableObjectNamespace("ARENAS", {
-  className: "ArenaWSS",
-  environment: "prod"
-})
+// export const arenas = await DurableObjectNamespace("ARENAS", {
+// className: "ArenaWSS",
+// environment: "prod"
+// })
 
 export const worker = await TanStackStart("WORKER", {
   name: "spectra",
   domains: ["spectra.muzzkhan.dev"],
-  adopt: true,
-  bindings: {
-    ARENAS: arenas.id
-  }
+  adopt: true
+  // bindings: {
+  //   ARENAS: arenas.id
+  // }
 })
 
 console.log({
