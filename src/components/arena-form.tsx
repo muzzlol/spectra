@@ -1,4 +1,5 @@
 import { useForm, useStore } from "@tanstack/react-form"
+import { useNavigate } from "@tanstack/react-router"
 import { useConvex, useMutation } from "convex/react"
 import { useRef, useState } from "react"
 import { toast } from "sonner"
@@ -15,13 +16,20 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { api } from "~/convex/_generated/api"
 import type { Id } from "~/convex/_generated/dataModel"
-
 import {
   type ArenaMode,
   type ArenaType,
-  MODE_CONFIG,
-  TYPE_CONFIG
-} from "~/shared/schema/arena"
+  MODE_CONFIG
+} from "~/convex/schema/arena"
+
+export const TYPE_CONFIG: Record<
+  ArenaType,
+  { label: Capitalize<ArenaType>; showTimer: boolean }
+> = {
+  draw: { label: "Draw", showTimer: true },
+  code: { label: "Code", showTimer: false },
+  typing: { label: "Typing", showTimer: true }
+}
 
 const ARENA_TYPES: { value: ArenaType; label: Capitalize<ArenaType> }[] =
   Object.entries(TYPE_CONFIG).map(([value, { label }]) => ({
@@ -54,7 +62,7 @@ type PromptValue =
   | { type: "typing"; text: string }
 
 interface PromptInputProps {
-  arenaType: ArenaType
+  ArenaType: ArenaType
   value: PromptValue
   onChange: (value: PromptValue) => void
 }
@@ -66,11 +74,7 @@ const selectStyles = cn(
   "font-mono disabled:cursor-not-allowed disabled:opacity-50"
 )
 
-function PromptInput({
-  arenaType: ArenaType,
-  value,
-  onChange
-}: PromptInputProps) {
+function PromptInput({ ArenaType, value, onChange }: PromptInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [inputMode, setInputMode] = useState<"file" | "url">("file")
 
@@ -191,6 +195,7 @@ function PromptInput({
 
 function CreateArenaForm() {
   const createArena = useMutation(api.arenas.create)
+  const navigate = useNavigate()
   const [promptValue, setPromptValue] = useState<PromptValue>({ type: "draw" })
 
   const form = useForm({
@@ -215,11 +220,11 @@ function CreateArenaForm() {
           mode: value.mode,
           maxPlayers: value.maxPlayers,
           timeLimit: value.timeLimit,
+          isPublic: false,
           prompt
         })
         toast.success("Arena created!")
-        console.log("Created arena:", arenaId)
-        // TODO: Navigate to arena or connect to DO
+        navigate({ to: "/arena/$arenaId", params: { arenaId } })
       } catch (error) {
         toast.error("Failed to create arena")
         console.error(error)
@@ -362,7 +367,7 @@ function CreateArenaForm() {
 
       {/* Prompt input */}
       <PromptInput
-        arenaType={currentType}
+        ArenaType={currentType}
         value={promptValue}
         onChange={setPromptValue}
       />

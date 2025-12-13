@@ -10,7 +10,7 @@ export const schema = defineSchema({
     .index("by_email", ["email"])
     .index("by_username", ["username"]),
 
-  arenas: defineTable(Arena),
+  arenas: defineTable(Arena).index("by_public_status", ["isPublic", "status"]),
   matches: defineTable(Match)
     .index("by_arena", ["arenaId"])
     .index("by_user", ["userId"])
