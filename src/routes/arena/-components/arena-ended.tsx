@@ -64,7 +64,11 @@ export function ArenaEnded({
           )}
 
           {/* Participants */}
-          <ParticipantList arenaId={arenaId} maxPlayers={maxPlayers} />
+          <ParticipantList
+            arenaId={arenaId}
+            maxPlayers={maxPlayers}
+            showEmptySlots={false}
+          />
 
           {/* Results placeholder */}
           <div className="rounded-sm border border-muted-foreground/30 border-dashed p-6 text-center">
