@@ -4,15 +4,12 @@ import { GitHubComment } from "alchemy/github"
 import { CloudflareStateStore } from "alchemy/state"
 
 const app = await alchemy("spectra", {
-  stateStore: (scope) =>
-    new CloudflareStateStore(scope, {
-      forceUpdate: true
-    })
+  stateStore: (scope) => new CloudflareStateStore(scope)
 })
 
 export const arenas = await DurableObjectNamespace("ARENAS", {
   className: "ArenaWSS",
-  environment: "prod"
+  sqlite: false
 })
 
 export const worker = await TanStackStart("WORKER", {
@@ -20,7 +17,7 @@ export const worker = await TanStackStart("WORKER", {
   domains: ["spectra.muzzkhan.dev"],
   adopt: true,
   bindings: {
-    ARENAS: arenas.id,
+    ARENAS: arenas,
     VITE_CONVEX_URL: alchemy.secret(process.env.VITE_CONVEX_URL),
     CONVEX_SITE_URL: alchemy.secret(process.env.CONVEX_SITE_URL),
     VITE_TURNSTILE_SITE_KEY: alchemy.secret(process.env.VITE_TURNSTILE_SITE_KEY)
