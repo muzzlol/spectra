@@ -13,7 +13,7 @@ const app = await alchemy("spectra", {
 
 export const arenas = await DurableObjectNamespace("ARENAS", {
   className: "ArenaWSS",
-  sqlite: false
+  sqlite: true
 })
 
 export const arenaHost = await Worker("AREA_HOST", {
@@ -32,7 +32,6 @@ export const website = await TanStackStart("WEBSITE", {
   domains: ["spectra.muzzkhan.dev"],
   adopt: true,
   bindings: {
-    ARENAS: arenas,
     VITE_ARENA_HOST: arenaHost.url!,
     VITE_CONVEX_URL: alchemy.secret(process.env.VITE_CONVEX_URL),
     CONVEX_SITE_URL: alchemy.secret(process.env.CONVEX_SITE_URL),
