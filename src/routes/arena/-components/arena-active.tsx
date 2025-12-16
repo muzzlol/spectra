@@ -14,7 +14,7 @@ interface ArenaActiveProps {
   currentPlayerCount: number
   maxPlayers: number
   timeLimit: number
-  startedAt: number
+  // startedAt: number
   prompt: string
 }
 

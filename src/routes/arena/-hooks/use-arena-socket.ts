@@ -42,6 +42,9 @@ export function useArenaSocket({
 
   const getWsUrl = useCallback(() => {
     const host = import.meta.env.VITE_ARENA_HOST
+    if (!host) {
+      throw new Error("VITE_ARENA_HOST is not configured")
+    }
     const wsHost = host.replace(/^http/, "ws")
     return `${wsHost}?arenaId=${arenaId}`
   }, [arenaId])
