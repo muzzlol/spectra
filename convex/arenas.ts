@@ -316,7 +316,7 @@ export const finalizeFromDO = internalMutation({
     endReason: v.union(
       v.literal("completed"),
       v.literal("abandoned"),
-      v.literal("host_ended")
+      v.literal("host_left")
     ),
     duration: v.number(),
     participants: v.array(

@@ -22,7 +22,8 @@ export const arenaHost = await Worker("AREA_HOST", {
   bindings: {
     ARENAS: arenas,
     VITE_CONVEX_URL: alchemy.secret(process.env.VITE_CONVEX_URL),
-    CONVEX_SITE_URL: alchemy.secret(process.env.CONVEX_SITE_URL)
+    CONVEX_SITE_URL: alchemy.secret(process.env.CONVEX_SITE_URL),
+    CONVEX_SERVICE_SECRET: alchemy.secret(process.env.CONVEX_SERVICE_SECRET)
   }
 })
 

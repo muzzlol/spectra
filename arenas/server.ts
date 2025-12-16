@@ -247,13 +247,6 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
   }
 
   private async saveToConvex(results: GameResults) {
-    const convexUrl = this.env.VITE_CONVEX_URL
-    if (!convexUrl) {
-      console.error("VITE_CONVEX_URL not configured")
-      return
-    }
-
-    // Convex HTTP endpoints are at the site URL, not the function URL
     const siteUrl = this.env.CONVEX_SITE_URL
     if (!siteUrl) {
       console.error("CONVEX_SITE_URL not configured")
@@ -261,9 +254,18 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
     }
 
     try {
+      const serviceSecret = this.env.CONVEX_SERVICE_SECRET
+      if (!serviceSecret) {
+        console.error("CONVEX_SERVICE_SECRET not configured")
+        return
+      }
+
       const response = await fetch(`${siteUrl}/api/arenas/finalize`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${serviceSecret}`
+        },
         body: JSON.stringify(results)
       })
 
