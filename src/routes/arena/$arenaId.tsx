@@ -24,10 +24,15 @@ export const Route = createFileRoute("/arena/$arenaId")({
 })
 
 function Arena() {
-  const { arenaId } = Route.useParams()
+  const { arenaId } = Route.useParams() as { arenaId: Id<"arenas"> }
   const {
     arena,
+    type,
+    mode,
     user,
+    currentPlayerCount,
+    maxPlayers,
+    timeLimit,
     isUserLoading,
     isHost,
     isParticipant,
@@ -54,10 +59,10 @@ function Arena() {
       return (
         <ArenaLobby
           arenaId={arenaId}
-          type={arena.type}
-          mode={arena.mode}
-          maxPlayers={arena.settings.maxPlayers}
-          timeLimit={arena.settings.timeLimit}
+          type={type}
+          mode={mode}
+          maxPlayers={maxPlayers}
+          timeLimit={timeLimit}
           isHost={isHost}
           isParticipant={isParticipant}
           canJoin={canJoin}
@@ -70,20 +75,22 @@ function Arena() {
       return (
         <ArenaActive
           arenaId={arenaId}
-          type={arena.type}
-          mode={arena.mode}
-          maxPlayers={arena.settings.maxPlayers}
-          timeLimit={arena.settings.timeLimit}
+          type={type}
+          mode={mode}
+          currentPlayerCount={currentPlayerCount}
+          maxPlayers={maxPlayers}
+          timeLimit={timeLimit}
           startedAt={arena.startedAt!}
+          prompt={arena.settings.prompt}
         />
       )
     case "ended":
       return (
         <ArenaEnded
           arenaId={arenaId}
-          type={arena.type}
-          mode={arena.mode}
-          maxPlayers={arena.settings.maxPlayers}
+          type={type}
+          mode={mode}
+          maxPlayers={maxPlayers}
           startedAt={arena.startedAt}
           endedAt={arena.endedAt!}
         />

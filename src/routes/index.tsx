@@ -86,9 +86,9 @@ function Home() {
           {/* Header */}
           <div className="space-y-2 text-center">
             <h1 className="font-bold text-4xl tracking-tighter">SPECTRA</h1>
-            <p className="text-xs uppercase tracking-[0.2em] opacity-70">
+            {/* <p className="text-xs uppercase tracking-[0.2em] opacity-70">
               - yoooo -
-            </p>
+            </p> */}
           </div>
           <UserProfile user={user ?? null} />
           {user && <ArenaForm />}
