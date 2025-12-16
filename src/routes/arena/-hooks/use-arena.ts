@@ -23,11 +23,15 @@ export function useArena(arenaId: Id<"arenas">) {
 
   return {
     arena,
+    type: arena.type,
+    mode: arena.mode,
     user,
     isUserLoading,
     isHost,
     isParticipant,
-
+    currentPlayerCount,
+    maxPlayers,
+    timeLimit: arena.settings.timeLimit,
     canStart:
       isHost &&
       arena.status === "lobby" &&

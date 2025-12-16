@@ -34,9 +34,9 @@ interface ArenaLobbyProps {
 
 export function ArenaLobby({
   arenaId,
+  maxPlayers,
   type,
   mode,
-  maxPlayers,
   timeLimit,
   isHost,
   isParticipant,

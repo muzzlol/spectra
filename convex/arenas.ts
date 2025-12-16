@@ -1,7 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server"
 import { paginationOptsValidator } from "convex/server"
 import { ConvexError, v } from "convex/values"
-import { internal } from "./_generated/api"
 import { internalMutation, mutation, query } from "./_generated/server"
 import { MODE_CONFIG } from "./schema/arena"
 
@@ -189,11 +188,6 @@ export const start = mutation({
         message: "Not enough players to start the arena"
       })
 
-    const durationMs = arena.settings.timeLimit * 1000
-    await ctx.scheduler.runAfter(durationMs, internal.arenas.markEnded, {
-      arenaId: args.arenaId
-    })
-
     await ctx.db.patch(args.arenaId, {
       status: "active",
       startedAt: Date.now()
@@ -313,5 +307,44 @@ export const markEnded = internalMutation({
       return
     }
     await ctx.db.patch(args.arenaId, { status: "ended", endedAt: Date.now() })
+  }
+})
+
+export const finalizeFromDO = internalMutation({
+  args: {
+    arenaId: v.id("arenas"),
+    endReason: v.union(
+      v.literal("completed"),
+      v.literal("abandoned"),
+      v.literal("host_ended")
+    ),
+    duration: v.number(),
+    participants: v.array(
+      v.object({
+        id: v.string(),
+        username: v.string(),
+        score: v.optional(v.number())
+      })
+    ),
+    finalElements: v.optional(v.array(v.any()))
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const arena = await ctx.db.get(args.arenaId)
+    if (!arena) {
+      throw new ConvexError({ code: "NOT_FOUND", message: "Arena not found" })
+    }
+
+    if (arena.status === "ended") {
+      throw new ConvexError({
+        code: "BAD_REQUEST",
+        message: "Arena already ended"
+      })
+    }
+
+    await ctx.db.patch(args.arenaId, {
+      status: "ended",
+      endedAt: Date.now()
+    })
   }
 })

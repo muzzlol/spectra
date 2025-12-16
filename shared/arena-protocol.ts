@@ -6,6 +6,7 @@ export type ArenaConfig = {
   mode: ArenaMode
   prompt: string
   timeLimit: number
+  hostId: string
 }
 export type ClientMsg =
   | { type: "init"; userId: string; username: string; config?: ArenaConfig }
@@ -46,7 +47,7 @@ export type GameResults = {
   participants: Array<
     Pick<Participant, "id" | "username"> & {
       score?: number
-      finalElements?: unknown[]
     }
   >
+  finalElements?: unknown[]
 }

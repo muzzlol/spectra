@@ -1,5 +1,9 @@
 import alchemy from "alchemy"
-import { DurableObjectNamespace, TanStackStart } from "alchemy/cloudflare"
+import {
+  DurableObjectNamespace,
+  TanStackStart,
+  Worker
+} from "alchemy/cloudflare"
 import { GitHubComment } from "alchemy/github"
 import { CloudflareStateStore } from "alchemy/state"
 
@@ -12,18 +16,29 @@ export const arenas = await DurableObjectNamespace("ARENAS", {
   sqlite: false
 })
 
-export const worker = await TanStackStart("WORKER", {
+export const arenaHost = await Worker("AREA_HOST", {
+  entrypoint: "arenas/server.ts",
+  url: true,
+  bindings: {
+    ARENAS: arenas,
+    VITE_CONVEX_URL: alchemy.secret(process.env.VITE_CONVEX_URL),
+    CONVEX_SITE_URL: alchemy.secret(process.env.CONVEX_SITE_URL)
+  }
+})
+
+export const website = await TanStackStart("WEBSITE", {
   name: "spectra",
   domains: ["spectra.muzzkhan.dev"],
   adopt: true,
   bindings: {
     ARENAS: arenas,
+    VITE_ARENA_HOST: arenaHost.url!,
     VITE_CONVEX_URL: alchemy.secret(process.env.VITE_CONVEX_URL),
     CONVEX_SITE_URL: alchemy.secret(process.env.CONVEX_SITE_URL),
     VITE_TURNSTILE_SITE_KEY: alchemy.secret(process.env.VITE_TURNSTILE_SITE_KEY)
   }
 })
-console.log({ url: worker.url })
+console.log({ website: website.url, arenaHost: arenaHost.url })
 
 if (process.env.PULL_REQUEST) {
   await GitHubComment("preview-comment", {
@@ -34,7 +49,7 @@ if (process.env.PULL_REQUEST) {
 
 Your changes have been deployed to a preview environment:
 
-**[Website]:** ${worker.url}
+**[Website]:** ${website.url}
 
 Built from commit ${process.env.GITHUB_SHA?.slice(0, 7)}
 

@@ -1,7 +1,5 @@
 ---
-description: Core Alchemy development guidelines and patterns
-globs: *.ts
-alwaysApply: true
+alwaysApply: false
 ---
 # Alchemy - TypeScript-native Infrastructure as Code
 
