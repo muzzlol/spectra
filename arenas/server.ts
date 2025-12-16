@@ -110,6 +110,7 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
 
     if (attachment?.participantId === this.#state.config?.hostId) {
       await this.finalize("host_left")
+      return
     }
 
     const remaining = this.ctx.getWebSockets()
@@ -148,7 +149,7 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
       this.#state.elements = []
       this.#state.config = { ...config, hostId: userId }
 
-      this.ctx.storage.put("state", this.#state)
+      await this.ctx.storage.put("state", this.#state)
 
       const endTime = Date.now() + config.timeLimit * 1000
       await this.ctx.storage.setAlarm(endTime)

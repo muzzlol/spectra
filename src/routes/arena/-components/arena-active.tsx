@@ -36,7 +36,7 @@ export function ArenaActive({
       mode,
       timeLimit,
       prompt,
-      hostId: user?._id ?? ""
+      hostId: user?._id ?? ("" as Id<"users">)
     }),
     [arenaId, type, mode, timeLimit, prompt, user?._id]
   )
@@ -53,6 +53,14 @@ export function ArenaActive({
       config,
       onGameOver: handleGameOver
     })
+
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    )
+  }
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -75,7 +83,7 @@ export function ArenaActive({
   return (
     <div className="flex min-h-screen flex-col">
       {/* Top bar with timer and info */}
-      <div className="border-border border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="border-border border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm">
