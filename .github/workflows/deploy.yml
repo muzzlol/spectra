@@ -43,6 +43,7 @@ jobs:
           VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
           CONVEX_SITE_URL: ${{ secrets.CONVEX_SITE_URL }}
           VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
+          CONVEX_SERVICE_SECRET: ${{ secrets.CONVEX_SERVICE_SECRET }}
 
   cleanup:
     runs-on: ubuntu-latest
@@ -76,3 +77,4 @@ jobs:
           VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
           CONVEX_SITE_URL: ${{ secrets.CONVEX_SITE_URL }}
           VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
+          CONVEX_SERVICE_SECRET: ${{ secrets.CONVEX_SERVICE_SECRET }}
