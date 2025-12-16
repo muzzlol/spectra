@@ -145,9 +145,9 @@ export function useArenaSocket({
     if (!ws) return
 
     if (ws.readyState === WebSocket.OPEN) {
-      wsRef.current = null
       send({ type: "leave" })
       ws.close()
+      wsRef.current = null
     }
   }, [send])
 
