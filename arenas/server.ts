@@ -165,7 +165,18 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
   }
 
   async alarm() {
-    await this.finalize("completed")
+    const timeRemaining = this.getTimeRemaining()
+
+    if (timeRemaining <= 0) {
+      await this.finalize("completed")
+      return
+    }
+
+    // broadcast tick to all connected clients
+    this.broadcast({ type: "tick", timeRemaining })
+
+    // schedule next tick (1 second)
+    await this.ctx.storage.setAlarm(Date.now() + 1000)
   }
 
   // --- Handlers ---
@@ -176,23 +187,28 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
   ) {
     const { userId, username, config } = msg
 
-    if (!config) {
-      this.send(ws, { type: "error", message: "Missing arena configuration" })
-      ws.close(1002, "Missing arena configuration")
-      return
-    }
-    const isFirstPlayer = this.ctx.getWebSockets().length === 1
+    logger.info({
+      message: "Player joined",
+      arenaId: config?.arenaId ?? this.#state.config?.arenaId,
+      userId,
+      username,
+      activeConnections: this.ctx.getWebSockets().length
+    })
 
-    // Initialize game state on first connection
-    if (isFirstPlayer && !this.#state.config) {
+    if (!this.#state.config) {
+      if (!config) {
+        this.send(ws, { type: "error", message: "Arena not initialized" })
+        ws.close(1002, "Initialization required")
+        return
+      }
+
       this.#state.startedAt = Date.now()
       this.#state.elements = []
       this.#state.config = { ...config, hostId: userId }
 
       await this.ctx.storage.put("state", this.#state)
-
-      const endTime = Date.now() + config.timeLimit * 1000
-      await this.ctx.storage.setAlarm(endTime)
+      // start tick loop (broadcasts time every second)
+      await this.ctx.storage.setAlarm(Date.now() + 1000)
     }
 
     // store user session data for this connection

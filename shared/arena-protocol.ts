@@ -21,6 +21,7 @@ export type ServerMsg =
       elements: unknown[]
       timeRemaining: number
     }
+  | { type: "tick"; timeRemaining: number }
   | { type: "participant_joined"; participant: Participant }
   | { type: "participant_left"; participantId: string }
   | { type: "element_change"; elements: unknown[]; from: string }

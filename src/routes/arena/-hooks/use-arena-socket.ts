@@ -102,6 +102,13 @@ export function useArenaSocket({
           }))
           break
 
+        case "tick":
+          setState((prev) => ({
+            ...prev,
+            timeRemaining: message.timeRemaining
+          }))
+          break
+
         case "game_over":
           onGameOver?.(message.reason)
           break

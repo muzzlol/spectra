@@ -80,7 +80,6 @@ function Arena() {
           currentPlayerCount={currentPlayerCount}
           maxPlayers={maxPlayers}
           timeLimit={timeLimit}
-          startedAt={arena.startedAt!}
           prompt={arena.settings.prompt}
         />
       )
