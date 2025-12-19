@@ -204,7 +204,7 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
 
       this.#state.startedAt = Date.now()
       this.#state.elements = []
-      this.#state.config = { ...config, hostId: userId }
+      this.#state.config = config
 
       await this.ctx.storage.put("state", this.#state)
       // start tick loop (broadcasts time every second)
@@ -300,13 +300,13 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
       finalElements: this.#state.elements
     }
 
+    await this.saveToConvex(results)
+
     this.broadcast({ type: "game_over", reason, results })
 
     for (const socket of this.ctx.getWebSockets()) {
       socket.close(1000, `Game ended: ${reason}`)
     }
-
-    await this.saveToConvex(results)
 
     await this.ctx.storage.deleteAll()
   }
