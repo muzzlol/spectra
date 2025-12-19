@@ -11,12 +11,12 @@ const app = await alchemy("spectra", {
   stateStore: (scope) => new CloudflareStateStore(scope)
 })
 
-export const arenas = await DurableObjectNamespace("ARENAS", {
+export const arenas = await DurableObjectNamespace("arena-wss", {
   className: "ArenaWSS",
   sqlite: true
 })
 
-export const arenaHost = await Worker("AREA_HOST", {
+export const arenaHost = await Worker("arena-host", {
   entrypoint: "arenas/server.ts",
   url: true,
   bindings: {
@@ -27,8 +27,7 @@ export const arenaHost = await Worker("AREA_HOST", {
   }
 })
 
-export const website = await TanStackStart("WEBSITE", {
-  name: "spectra",
+export const website = await TanStackStart("website", {
   domains: ["spectra.muzzkhan.dev"],
   adopt: true,
   bindings: {
@@ -38,7 +37,11 @@ export const website = await TanStackStart("WEBSITE", {
     VITE_TURNSTILE_SITE_KEY: alchemy.secret(process.env.VITE_TURNSTILE_SITE_KEY)
   }
 })
-console.log({ website: website.url, arenaHost: arenaHost.url })
+
+console.log({
+  website: [website.url, website.name].join(" - "),
+  arena: [arenaHost.url, arenaHost.name].join(" - ")
+})
 
 if (process.env.PULL_REQUEST) {
   await GitHubComment("preview-comment", {
@@ -49,7 +52,7 @@ if (process.env.PULL_REQUEST) {
 
 Your changes have been deployed to a preview environment:
 
-**[Website]:** ${website.url}
+**[Website]:** ${spectraWebsite.url}
 
 Built from commit ${process.env.GITHUB_SHA?.slice(0, 7)}
 
