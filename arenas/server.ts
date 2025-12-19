@@ -8,12 +8,14 @@ import type {
   ServerMsg,
   SessionAttachment
 } from "~/shared/arena-protocol"
+import logger from "~/shared/logger"
 import type { WorkerEnv } from "./env.d.ts"
 
 export default {
-  fetch: (req: Request, env: WorkerEnv) => {
+  fetch: async (req: Request, env: WorkerEnv) => {
     const url = new URL(req.url)
     const arenaId = url.searchParams.get("arenaId")
+    logger.info({ message: "fetch", url: req.url, arenaId })
 
     if (!arenaId) {
       return new Response(JSON.stringify({ error: "arenaId required" }), {
@@ -70,6 +72,7 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
     const [client, server] = Object.values(pair)
 
     this.ctx.acceptWebSocket(server)
+    logger.info({ message: "WebSocket upgrade accepted" })
 
     return new Response(null, { status: 101, webSocket: client })
   }
@@ -104,6 +107,14 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
   async webSocketClose(ws: WebSocket, _code: number, _reason: string) {
     const attachment = this.getAttachment(ws)
     if (attachment) {
+      logger.info({
+        message: "Player left",
+        arenaId: this.#state.config?.arenaId,
+        userId: attachment.participantId,
+        username: attachment.username,
+        code: _code,
+        reason: _reason
+      })
       this.broadcast(
         { type: "participant_left", participantId: attachment.participantId },
         ws
@@ -221,9 +232,19 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
 
   private async finalize(reason: GameEndReason) {
     const config = this.#state.config
-    if (!config) return
+    if (!config) {
+      logger.warn({ message: "Finalize called but no config found", reason })
+      return
+    }
 
     const participants = this.getParticipants()
+    logger.info({
+      message: "Finalizing arena",
+      arenaId: config.arenaId,
+      reason,
+      participantCount: participants.length
+    })
+
     const duration = this.#state.startedAt
       ? Math.floor((Date.now() - this.#state.startedAt) / 1000)
       : 0
@@ -249,36 +270,46 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
 
   private async saveToConvex(results: GameResults) {
     const siteUrl = this.env.CONVEX_SITE_URL
-    if (!siteUrl) {
-      console.error("CONVEX_SITE_URL not configured")
+    const serviceSecret = this.env.CONVEX_SERVICE_SECRET
+
+    if (!siteUrl || !serviceSecret) {
+      logger.error({ message: "Convex configuration missing (URL or Secret)" })
       return
     }
 
-    try {
-      const serviceSecret = this.env.CONVEX_SERVICE_SECRET
-      if (!serviceSecret) {
-        console.error("CONVEX_SERVICE_SECRET not configured")
-        return
-      }
-
-      const response = await fetch(`${siteUrl}/api/arenas/finalize`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${serviceSecret}`
-        },
-        body: JSON.stringify(results)
+    const response = await fetch(`${siteUrl}/api/arenas/finalize`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${serviceSecret}`
+      },
+      body: JSON.stringify(results)
+    }).catch((error) => {
+      logger.error({
+        message: "Network error saving to Convex",
+        error: error instanceof Error ? error.message : String(error),
+        arenaId: results.arenaId
       })
+      return null
+    })
 
-      if (!response.ok) {
-        console.error(
-          "Failed to save results to Convex:",
-          await response.text()
-        )
-      }
-    } catch (error) {
-      console.error("Error saving to Convex:", error)
+    if (!response) return
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      logger.error({
+        message: "Failed to save results to Convex",
+        status: response.status,
+        error: errorText,
+        arenaId: results.arenaId
+      })
+      return
     }
+
+    logger.info({
+      message: "Results saved to Convex successfully",
+      arenaId: results.arenaId
+    })
   }
 
   // --- Helpers ---
@@ -325,7 +356,12 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
   private parseMsg(raw: string): ClientMsg | null {
     try {
       return JSON.parse(raw) as ClientMsg
-    } catch {
+    } catch (error) {
+      logger.error({
+        message: "Failed to parse WebSocket message",
+        raw,
+        error: error instanceof Error ? error.message : String(error)
+      })
       return null
     }
   }
