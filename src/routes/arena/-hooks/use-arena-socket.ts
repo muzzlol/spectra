@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useState } from "react"
+import useWebSocket from "react-use-websocket"
 import type {
   ArenaConfig,
   ClientMsg,
@@ -6,10 +7,7 @@ import type {
   ServerMsg
 } from "~/shared/arena-protocol"
 
-type ConnectionState = "connecting" | "connected" | "disconnected" | "error"
-
 type ArenaSocketState = {
-  connectionState: ConnectionState
   participants: Participant[]
   elements: unknown[]
   timeRemaining: number
@@ -31,9 +29,7 @@ export function useArenaSocket({
   config,
   onGameOver
 }: UseArenaSocketOptions) {
-  const wsRef = useRef<WebSocket | null>(null)
   const [state, setState] = useState<ArenaSocketState>({
-    connectionState: "disconnected",
     participants: [],
     elements: [],
     timeRemaining: config.timeLimit,
@@ -49,21 +45,31 @@ export function useArenaSocket({
     return `${wsHost}?arenaId=${arenaId}`
   }, [arenaId])
 
-  const send = useCallback((message: ClientMsg) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(message))
-    }
-  }, [])
-
-  const handleMessage = useCallback(
-    (event: MessageEvent) => {
+  const { sendJsonMessage, readyState } = useWebSocket(getWsUrl(), {
+    share: false,
+    shouldReconnect: (closeEvent) => {
+      const code = closeEvent.code
+      if (code === 1000 || code === 1002) {
+        return false
+      }
+      return true
+    },
+    onOpen: () => {
+      console.log("ArenaWS opened")
+      sendJsonMessage({
+        type: "init",
+        userId,
+        username,
+        config
+      } satisfies ClientMsg)
+    },
+    onClose: () => {
+      console.log("ArenaWS closed")
+    },
+    onMessage: (event) => {
       const message = JSON.parse(event.data) as ServerMsg
 
       switch (message.type) {
-        case "connected":
-          setState((prev) => ({ ...prev, connectionState: "connected" }))
-          break
-
         case "state":
           setState((prev) => ({
             ...prev,
@@ -104,84 +110,26 @@ export function useArenaSocket({
           setState((prev) => ({ ...prev, error: message.message }))
           break
       }
-    },
-    [onGameOver]
-  )
-
-  const connect = useCallback(() => {
-    if (!userId) return
-
-    const state = wsRef.current?.readyState
-    if (state === WebSocket.OPEN || state === WebSocket.CONNECTING) return
-
-    setState((prev) => ({
-      ...prev,
-      connectionState: "connecting",
-      error: null
-    }))
-
-    const ws = new WebSocket(getWsUrl())
-    wsRef.current = ws
-
-    ws.onopen = () => {
-      send({ type: "init", userId, username, config })
     }
-
-    ws.onmessage = handleMessage
-
-    ws.onerror = () => {
-      setState((prev) => ({
-        ...prev,
-        connectionState: "error",
-        error: "WebSocket connection error"
-      }))
-    }
-
-    ws.onclose = () => {
-      setState((prev) => ({ ...prev, connectionState: "disconnected" }))
-      wsRef.current = null
-    }
-  }, [getWsUrl, handleMessage, send, userId, username, config])
-
-  const disconnect = useCallback(() => {
-    const ws = wsRef.current
-    if (!ws) return
-
-    if (ws.readyState === WebSocket.OPEN) {
-      send({ type: "leave" })
-      ws.close()
-      wsRef.current = null
-    }
-  }, [send])
+  })
 
   const sendElements = useCallback(
     (elements: unknown[]) => {
-      send({ type: "element_change", elements })
+      sendJsonMessage({ type: "element_change", elements } satisfies ClientMsg)
     },
-    [send]
+    [sendJsonMessage]
   )
 
   const sendCursor = useCallback(
     (x: number, y: number) => {
-      send({ type: "cursor", x, y })
+      sendJsonMessage({ type: "cursor", x, y } satisfies ClientMsg)
     },
-    [send]
+    [sendJsonMessage]
   )
-
-  const connectRef = useRef(connect)
-  const disconnectRef = useRef(disconnect)
-  connectRef.current = connect
-  disconnectRef.current = disconnect
-
-  useEffect(() => {
-    connectRef.current()
-    return () => disconnectRef.current()
-  }, [])
 
   return {
     ...state,
-    connect,
-    disconnect,
+    connectionState: readyState,
     sendElements,
     sendCursor
   }

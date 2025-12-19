@@ -15,7 +15,6 @@ export type ClientMsg =
   | { type: "leave" }
 
 export type ServerMsg =
-  | { type: "connected"; participantId: string }
   | {
       type: "state"
       participants: Participant[]

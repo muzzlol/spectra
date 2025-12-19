@@ -27,7 +27,9 @@ export default {
       return new Response("Expected WebSocket upgrade", { status: 426 })
     }
 
-    const stub = env.ARENAS.get(env.ARENAS.idFromName(arenaId))
+    const namespace = env.ARENAS as DurableObjectNamespace<ArenaWSS>
+    const stub = namespace.get(namespace.idFromName(arenaId))
+
     return stub.fetch(req)
   }
 }
@@ -162,8 +164,6 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
       joinedAt: Date.now()
     }
     ws.serializeAttachment(attachment)
-
-    this.send(ws, { type: "connected", participantId: userId })
 
     // send current state
     const participants = this.getParticipants()

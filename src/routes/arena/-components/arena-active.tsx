@@ -1,5 +1,6 @@
 import { Clock, Users, Wifi, WifiOff } from "lucide-react"
 import { useCallback, useMemo } from "react"
+import { ReadyState } from "react-use-websocket"
 import { Spinner } from "@/components/ui/spinner"
 import { useCurrentUser } from "@/hooks/use-user"
 import type { Id } from "~/convex/_generated/dataModel"
@@ -72,9 +73,9 @@ export function ArenaActive({
   const isCriticalTime = timeRemaining <= 10
 
   const connectionIcon =
-    connectionState === "connected" ? (
+    connectionState === ReadyState.OPEN ? (
       <Wifi className="h-4 w-4 text-green-500" />
-    ) : connectionState === "connecting" ? (
+    ) : connectionState === ReadyState.CONNECTING ? (
       <Spinner size="sm" />
     ) : (
       <WifiOff className="h-4 w-4 text-destructive" />
@@ -123,7 +124,7 @@ export function ArenaActive({
 
       {/* Main game area */}
       <div className="flex flex-1 flex-col">
-        {connectionState === "connecting" ? (
+        {connectionState === ReadyState.CONNECTING ? (
           <div className="flex flex-1 items-center justify-center">
             <div className="text-center">
               <Spinner size="lg" />
@@ -132,7 +133,7 @@ export function ArenaActive({
               </p>
             </div>
           </div>
-        ) : connectionState === "connected" ? (
+        ) : connectionState === ReadyState.OPEN ? (
           <div className="flex flex-1 flex-col p-4">
             {/* Prompt display */}
             <div className="mb-4 rounded-md bg-muted/50 p-4 text-center">
