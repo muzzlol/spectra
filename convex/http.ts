@@ -1,4 +1,5 @@
 import { httpRouter } from "convex/server"
+import type { GameResults } from "~/shared/arena-protocol"
 import { internal } from "./_generated/api"
 import type { Id } from "./_generated/dataModel"
 import { httpAction } from "./_generated/server"
@@ -8,6 +9,37 @@ import { getEnv } from "./env"
 const http = httpRouter()
 
 auth.addHttpRoutes(http)
+
+http.route({
+  path: "/api/arenas/status",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    const url = new URL(req.url)
+    const arenaId = url.searchParams.get("arenaId")
+
+    if (!arenaId) {
+      return new Response(JSON.stringify({ error: "arenaId required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      })
+    }
+
+    try {
+      const arena = await ctx.runQuery(internal.arenas.getStatus, {
+        arenaId: arenaId as Id<"arenas">
+      })
+      return new Response(JSON.stringify(arena), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      })
+    } catch {
+      return new Response(JSON.stringify({ exists: false, status: null }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      })
+    }
+  })
+})
 
 http.route({
   path: "/api/arenas/finalize",
@@ -35,13 +67,7 @@ http.route({
     const body = await req.json()
 
     const { arenaId, endReason, duration, participants, finalElements } =
-      body as {
-        arenaId: Id<"arenas">
-        endReason: "completed" | "abandoned" | "host_left"
-        duration: number
-        participants: Array<{ id: string; username: string; score?: number }>
-        finalElements?: unknown[]
-      }
+      body as GameResults
 
     if (!arenaId) {
       return new Response(JSON.stringify({ error: "arenaId required" }), {
@@ -51,7 +77,7 @@ http.route({
     }
 
     await ctx.runMutation(internal.arenas.finalizeFromDO, {
-      arenaId,
+      arenaId: arenaId as Id<"arenas">,
       endReason,
       duration,
       participants,

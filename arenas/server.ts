@@ -29,6 +29,33 @@ export default {
       return new Response("Expected WebSocket upgrade", { status: 426 })
     }
 
+    // Validate arena exists and is joinable before upgrading
+    const validationRes = await fetch(
+      `${env.CONVEX_SITE_URL}/api/arenas/status?arenaId=${arenaId}`
+    ).catch(() => null)
+
+    if (!validationRes?.ok) {
+      logger.warn({ message: "Failed to validate arena", arenaId })
+      // Proceed anyway - let DO handle it if Convex is unreachable
+    } else {
+      const { exists, status } = (await validationRes.json()) as {
+        exists: boolean
+        status: "lobby" | "active" | "ended" | null
+      }
+      if (!exists) {
+        return new Response(JSON.stringify({ error: "Arena not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" }
+        })
+      }
+      if (status === "ended") {
+        return new Response(JSON.stringify({ error: "Arena has ended" }), {
+          status: 410,
+          headers: { "Content-Type": "application/json" }
+        })
+      }
+    }
+
     const namespace = env.ARENAS as DurableObjectNamespace<ArenaWSS>
     const stub = namespace.get(namespace.idFromName(arenaId))
 

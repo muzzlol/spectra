@@ -1,7 +1,12 @@
 import { getAuthUserId } from "@convex-dev/auth/server"
 import { paginationOptsValidator } from "convex/server"
 import { ConvexError, v } from "convex/values"
-import { internalMutation, mutation, query } from "./_generated/server"
+import {
+  internalMutation,
+  internalQuery,
+  mutation,
+  query
+} from "./_generated/server"
 import { MODE_CONFIG } from "./schema/arena"
 
 export const create = mutation({
@@ -298,6 +303,26 @@ export const getParticipants = query({
   }
 })
 
+export const getStatus = internalQuery({
+  args: { arenaId: v.id("arenas") },
+  returns: v.object({
+    exists: v.boolean(),
+    status: v.union(
+      v.literal("lobby"),
+      v.literal("active"),
+      v.literal("ended"),
+      v.null()
+    )
+  }),
+  handler: async (ctx, args) => {
+    const arena = await ctx.db.get(args.arenaId)
+    if (!arena) {
+      return { exists: false, status: null }
+    }
+    return { exists: true, status: arena.status }
+  }
+})
+
 export const markEnded = internalMutation({
   args: { arenaId: v.id("arenas") },
   returns: v.null(),
@@ -323,6 +348,7 @@ export const finalizeFromDO = internalMutation({
       v.object({
         id: v.string(),
         username: v.string(),
+        joinedAt: v.number(),
         score: v.optional(v.number())
       })
     ),

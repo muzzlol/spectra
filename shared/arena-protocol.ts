@@ -44,7 +44,7 @@ export type GameResults = {
   endReason: GameEndReason
   duration: number
   participants: Array<
-    Pick<Participant, "id" | "username"> & {
+    Participant & {
       score?: number
     }
   >
