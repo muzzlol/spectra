@@ -307,7 +307,8 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
     for (const socket of this.ctx.getWebSockets()) {
       socket.close(1000, `Game ended: ${reason}`)
     }
-
+    // rm alarm first cause storage prob has metadata about it
+    await this.ctx.storage.deleteAlarm()
     await this.ctx.storage.deleteAll()
   }
 
