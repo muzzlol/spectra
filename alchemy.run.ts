@@ -52,7 +52,7 @@ if (process.env.PULL_REQUEST) {
 
 Your changes have been deployed to a preview environment:
 
-**[Website]:** ${spectraWebsite.url}
+**[Website]:** ${website.url}
 
 Built from commit ${process.env.GITHUB_SHA?.slice(0, 7)}
 
