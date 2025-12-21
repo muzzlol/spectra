@@ -1,3 +1,4 @@
+import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types"
 import type { ArenaMode, ArenaType } from "~/convex/schema/arena"
 export type ArenaConfig<T extends ArenaType> = {
   arenaId: string
@@ -23,7 +24,7 @@ export type ArenaData<T extends ArenaType> = T extends "draw"
       : never
 
 export type DrawData = {
-  playerElements: Record<string, unknown[]>
+  playerElements: Record<string, ExcalidrawElement[]>
   playerCursors: Record<string, CursorPos>
 }
 export type CodeData = {
@@ -35,7 +36,7 @@ export type CodeData = {
 
 export type CanvasUpdate = {
   type: "canvas_update"
-  elements: unknown[]
+  elements: ExcalidrawElement[]
 }
 export type RunResult = {
   passed: boolean
@@ -137,5 +138,5 @@ export type GameResults = {
       score?: number
     }
   >
-  finalElements?: unknown[]
+  finalElements?: unknown[] // TODO: figure out what to do with this
 }
