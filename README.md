@@ -9,7 +9,7 @@ There are 3 battle types planned:
 
 There are diff modes:
 - pvp : upto 4 players
-- duo mode : 2v2
+- solo mode
 
 This is made possible with convex for a reactive database backend, tanstack-start serving as a meta-framework for react, and cloudflare's Durable Objects for the wss that enables the live arenas.
 

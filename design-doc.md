@@ -20,7 +20,6 @@ type BattleType = "draw" | "code" | "typing"
 There are diff modes:
 - solo mode
 - pvp : upto 4 players
-- duo mode : 2v2
 
 
 ## Architecture

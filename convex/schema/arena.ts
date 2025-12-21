@@ -2,7 +2,7 @@ import { v } from "convex/values"
 export const Arena = v.object({
   hostId: v.id("users"),
   type: v.union(v.literal("draw"), v.literal("code"), v.literal("typing")),
-  mode: v.union(v.literal("solo"), v.literal("pvp"), v.literal("duo")),
+  mode: v.union(v.literal("solo"), v.literal("pvp")),
   status: v.union(v.literal("lobby"), v.literal("active"), v.literal("ended")),
   isPublic: v.boolean(),
   settings: v.object({
@@ -30,11 +30,5 @@ export const MODE_CONFIG: Record<
   }
 > = {
   solo: { label: "Solo", maxPlayers: 1, minPlayers: 1, showPlayerInput: false },
-  pvp: { label: "PvP", maxPlayers: 4, minPlayers: 2, showPlayerInput: true },
-  duo: {
-    label: "Duo (2v2)",
-    maxPlayers: 4,
-    minPlayers: 4,
-    showPlayerInput: false
-  }
+  pvp: { label: "PvP", maxPlayers: 4, minPlayers: 2, showPlayerInput: true }
 }

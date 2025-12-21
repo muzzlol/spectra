@@ -12,7 +12,7 @@ import { MODE_CONFIG } from "./schema/arena"
 export const create = mutation({
   args: {
     type: v.union(v.literal("draw"), v.literal("code"), v.literal("typing")),
-    mode: v.union(v.literal("solo"), v.literal("pvp"), v.literal("duo")),
+    mode: v.union(v.literal("solo"), v.literal("pvp")),
     maxPlayers: v.number(),
     timeLimit: v.number(),
     isPublic: v.boolean(),
@@ -72,7 +72,7 @@ export const get = query({
       v.literal("ended")
     ),
     type: v.union(v.literal("draw"), v.literal("code"), v.literal("typing")),
-    mode: v.union(v.literal("solo"), v.literal("pvp"), v.literal("duo")),
+    mode: v.union(v.literal("solo"), v.literal("pvp")),
     settings: v.object({
       maxPlayers: v.number(),
       timeLimit: v.number(),
@@ -220,7 +220,7 @@ export const listOpenLobbies = query({
           v.literal("code"),
           v.literal("typing")
         ),
-        mode: v.union(v.literal("solo"), v.literal("pvp"), v.literal("duo")),
+        mode: v.union(v.literal("solo"), v.literal("pvp")),
         settings: v.object({
           maxPlayers: v.number(),
           timeLimit: v.number(),
