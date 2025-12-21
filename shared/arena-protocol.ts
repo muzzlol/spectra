@@ -1,33 +1,121 @@
 import type { ArenaMode, ArenaType } from "~/convex/schema/arena"
-
-export type ArenaConfig = {
+export type ArenaConfig<T extends ArenaType> = {
   arenaId: string
-  type: ArenaType
+  type: T
   mode: ArenaMode
   prompt: string
   timeLimit: number
   hostId: string
 }
-export type ClientMsg =
-  | { type: "init"; userId: string; username: string; config?: ArenaConfig }
-  | { type: "element_change"; elements: unknown[] }
-  | { type: "cursor"; x: number; y: number }
-  | { type: "leave" }
 
-export type ServerMsg =
+export type ArenaState<T extends ArenaType> = {
+  config: ArenaConfig<T> | null
+  startedAt: number | null
+  data: ArenaData<T> | null
+}
+
+export type ArenaData<T extends ArenaType> = T extends "draw"
+  ? DrawData
+  : T extends "code"
+    ? CodeData
+    : T extends "typing"
+      ? TypingData
+      : never
+
+export type DrawData = {
+  playerElements: Record<string, unknown[]>
+  playerCursors: Record<string, CursorPos>
+}
+export type CodeData = {
+  language: "python" | "javascript" | "typescript"
+  playerCode: Record<string, string>
+  testResults: Record<string, RunResult[]>
+  playerCursors: Record<string, CursorPos> // x: line, y: col
+}
+
+export type CanvasUpdate = {
+  type: "canvas_update"
+  elements: unknown[]
+}
+export type RunResult = {
+  passed: boolean
+  output: string
+  time?: number
+}
+
+export type TypingData = {
+  progress: Record<string, TypingProgress>
+}
+
+export type TypingProgress = {
+  charIndex: number
+  wpm: number
+  accuracy: number
+  finished: boolean
+}
+
+export type TypingProgressUpdate = {
+  type: "progress"
+  progress: TypingProgress
+}
+
+export type CursorPos = { x: number; y: number }
+
+export type CodeUpdate = { type: "code_update"; code: string }
+export type CodeRun = { type: "run" }
+export type RunResultUpdate = { type: "run_result"; result: RunResult[] }
+
+export type ClientMsg<T extends ArenaType> =
+  | { type: "init"; userId: string; username: string; config?: ArenaConfig<T> }
+  | { type: "leave" }
+  | ClientAction<T>
+
+export type ClientAction<T extends ArenaType> = T extends "draw"
+  ? DrawAction
+  : T extends "code"
+    ? CodeAction
+    : T extends "typing"
+      ? TypingAction
+      : never
+
+export type CursorUpdate = { type: "cursor" } & CursorPos
+
+export type DrawAction = CursorUpdate | CanvasUpdate
+export type CodeAction = CursorUpdate | CodeUpdate | CodeRun
+
+export type TypingAction = TypingProgressUpdate
+
+export type ServerMsg<T extends ArenaType> =
   | {
       type: "state"
       participants: Participant[]
-      elements: unknown[]
+      gameState: ArenaData<T> | null
       timeRemaining: number
     }
   | { type: "tick"; timeRemaining: number }
   | { type: "participant_joined"; participant: Participant }
   | { type: "participant_left"; participantId: string }
-  | { type: "element_change"; elements: unknown[]; from: string }
-  | { type: "cursor"; participantId: string; x: number; y: number }
   | { type: "game_over"; reason: GameEndReason; results: GameResults }
   | { type: "error"; message: string }
+  | ServerEvent<T>
+
+export type ServerEvent<T extends ArenaType> = T extends "draw"
+  ? DrawEvent
+  : T extends "code"
+    ? CodeEvent
+    : T extends "typing"
+      ? TypingEvent
+      : never
+
+export type Attributed<T> = T & { participantId: string }
+export type DrawEvent = Attributed<CursorUpdate> | Attributed<CanvasUpdate>
+export type CodeEvent =
+  | Attributed<CursorUpdate>
+  | Attributed<CodeUpdate>
+  | Attributed<CodeRun>
+  | Attributed<RunResultUpdate>
+
+export type TypingEvent = Attributed<TypingProgressUpdate>
 
 export type Participant = {
   id: string
