@@ -7,9 +7,18 @@ import type {
   ServerMsg
 } from "~/shared/arena-protocol"
 
+/** Type-agnostic cursor data - pane components interpret based on arena type */
+export type CursorData = {
+  participantId: string
+  x: number
+  y: number
+  timestamp: number
+}
+
 type ArenaSocketState = {
   participants: Participant[]
   elements: unknown[]
+  cursors: Map<string, CursorData>
   timeRemaining: number
   error: string | null
 }
@@ -32,6 +41,7 @@ export function useArenaSocket({
   const [state, setState] = useState<ArenaSocketState>({
     participants: [],
     elements: [],
+    cursors: new Map(),
     timeRemaining: config.timeLimit,
     error: null
   })
@@ -86,14 +96,20 @@ export function useArenaSocket({
           }))
           break
 
-        case "participant_left":
-          setState((prev) => ({
-            ...prev,
-            participants: prev.participants.filter(
-              (p) => p.id !== message.participantId
-            )
-          }))
+        case "participant_left": {
+          setState((prev) => {
+            const newCursors = new Map(prev.cursors)
+            newCursors.delete(message.participantId)
+            return {
+              ...prev,
+              participants: prev.participants.filter(
+                (p) => p.id !== message.participantId
+              ),
+              cursors: newCursors
+            }
+          })
           break
+        }
 
         case "element_change":
           setState((prev) => ({
@@ -101,6 +117,21 @@ export function useArenaSocket({
             elements: message.elements
           }))
           break
+
+        case "cursor": {
+          const cursorData: CursorData = {
+            participantId: message.participantId,
+            x: message.x,
+            y: message.y,
+            timestamp: Date.now()
+          }
+          setState((prev) => {
+            const newCursors = new Map(prev.cursors)
+            newCursors.set(message.participantId, cursorData)
+            return { ...prev, cursors: newCursors }
+          })
+          break
+        }
 
         case "tick":
           setState((prev) => ({

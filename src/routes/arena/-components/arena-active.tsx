@@ -1,12 +1,17 @@
-import { Clock, Users, Wifi, WifiOff } from "lucide-react"
-import { useCallback, useMemo } from "react"
+import { WifiOff } from "lucide-react"
+import { useCallback, useMemo, useState } from "react"
 import { ReadyState } from "react-use-websocket"
 import { Spinner } from "@/components/ui/spinner"
 import { useCurrentUser } from "@/hooks/use-user"
 import type { Id } from "~/convex/_generated/dataModel"
 import type { ArenaMode, ArenaType } from "~/convex/schema/arena"
-import { MODE_CONFIG } from "~/convex/schema/arena"
+import { CodeArena } from "../-code/arena"
+import type { TestResult } from "../-code/pane"
+import { DrawArena } from "../-draw/arena"
 import { useArenaSocket } from "../-hooks/use-arena-socket"
+import { TypingArena } from "../-typing/arena"
+import type { TypingProgress } from "../-typing/wpm-display"
+import { ArenaHeader } from "./arena-header"
 
 interface ArenaActiveProps {
   arenaId: Id<"arenas">
@@ -15,8 +20,8 @@ interface ArenaActiveProps {
   currentPlayerCount: number
   maxPlayers: number
   timeLimit: number
-  // startedAt: number
   prompt: string
+  participantIds?: Id<"users">[]
 }
 
 export function ArenaActive({
@@ -25,10 +30,15 @@ export function ArenaActive({
   mode,
   maxPlayers,
   timeLimit,
-  prompt
+  prompt,
+  participantIds = []
 }: ArenaActiveProps) {
   const { user } = useCurrentUser()
-  const modeConfig = MODE_CONFIG[mode]
+
+  // Type-specific state (will be managed by actual implementations)
+  const [codeByParticipant] = useState<Record<string, string>>({})
+  const [testResultsByParticipant] = useState<Record<string, TestResult[]>>({})
+  const [typingProgress] = useState<Record<string, TypingProgress>>({})
 
   const config = useMemo(
     () => ({
@@ -46,14 +56,27 @@ export function ArenaActive({
     console.log("Game over:", reason)
   }, [])
 
-  const { connectionState, participants, timeRemaining, error } =
-    useArenaSocket({
-      arenaId,
-      userId: user?._id ?? "",
-      username: user?.username ?? "Anonymous",
-      config,
-      onGameOver: handleGameOver
-    })
+  const {
+    connectionState,
+    participants,
+    elements,
+    cursors,
+    timeRemaining,
+    error,
+    sendElements,
+    sendCursor
+  } = useArenaSocket({
+    arenaId,
+    userId: user?._id ?? "",
+    username: user?.username ?? "Anonymous",
+    config,
+    onGameOver: handleGameOver
+  })
+
+  // Spectator detection: user is not in the participant list
+  const isSpectator = user
+    ? !participantIds.includes(user._id) && participantIds.length > 0
+    : true
 
   if (!user) {
     return (
@@ -63,112 +86,116 @@ export function ArenaActive({
     )
   }
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
-
-  const isLowTime = timeRemaining <= 30
-  const isCriticalTime = timeRemaining <= 10
-
-  const connectionIcon =
-    connectionState === ReadyState.OPEN ? (
-      <Wifi className="h-4 w-4 text-green-500" />
-    ) : connectionState === ReadyState.CONNECTING ? (
-      <Spinner size="sm" />
-    ) : (
-      <WifiOff className="h-4 w-4 text-destructive" />
-    )
-
-  return (
-    <div className="flex min-h-screen flex-col">
-      {/* Top bar with timer and info */}
-      <div className="border-border border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              {connectionIcon}
-              <span className="font-medium capitalize">{type}</span>
-              <span className="text-muted-foreground">•</span>
-              <span className="text-muted-foreground">{modeConfig.label}</span>
-            </div>
-          </div>
-
-          <div
-            className={`flex items-center gap-2 font-bold font-mono text-xl ${
-              isCriticalTime
-                ? "animate-pulse text-destructive"
-                : isLowTime
-                  ? "text-yellow-500"
-                  : ""
-            }`}
-          >
-            <Clock className="h-5 w-5" />
-            {formatTime(timeRemaining)}
-          </div>
-
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-            <Users className="h-4 w-4" />
-            {participants.length}/{maxPlayers} players
+  // Connection states
+  if (connectionState === ReadyState.CONNECTING) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <ArenaHeader
+          type={type}
+          mode={mode}
+          connectionState={connectionState}
+          timeRemaining={timeRemaining}
+          participantCount={participants.length}
+          maxPlayers={maxPlayers}
+        />
+        <div className="flex flex-1 items-center justify-center">
+          <div className="text-center">
+            <Spinner size="lg" />
+            <p className="mt-4 text-muted-foreground">Connecting to arena...</p>
           </div>
         </div>
       </div>
+    )
+  }
 
-      {/* Connection status / error */}
+  if (connectionState !== ReadyState.OPEN) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <ArenaHeader
+          type={type}
+          mode={mode}
+          connectionState={connectionState}
+          timeRemaining={timeRemaining}
+          participantCount={participants.length}
+          maxPlayers={maxPlayers}
+        />
+        <div className="flex flex-1 items-center justify-center">
+          <div className="text-center">
+            <WifiOff className="mx-auto h-12 w-12 text-muted-foreground" />
+            <p className="mt-4 text-muted-foreground">
+              Disconnected from arena
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex h-screen flex-col">
+      <ArenaHeader
+        type={type}
+        mode={mode}
+        connectionState={connectionState}
+        timeRemaining={timeRemaining}
+        participantCount={participants.length}
+        maxPlayers={maxPlayers}
+      />
+
+      {/* Error banner */}
       {error && (
-        <div className="bg-destructive/10 px-4 py-2 text-center text-destructive text-sm">
+        <div className="shrink-0 bg-destructive/10 px-4 py-2 text-center text-destructive text-sm">
           {error}
         </div>
       )}
 
-      {/* Main game area */}
-      <div className="flex flex-1 flex-col">
-        {connectionState === ReadyState.CONNECTING ? (
-          <div className="flex flex-1 items-center justify-center">
-            <div className="text-center">
-              <Spinner size="lg" />
-              <p className="mt-4 text-muted-foreground">
-                Connecting to arena...
-              </p>
-            </div>
-          </div>
-        ) : connectionState === ReadyState.OPEN ? (
-          <div className="flex flex-1 flex-col p-4">
-            {/* Prompt display */}
-            <div className="mb-4 rounded-md bg-muted/50 p-4 text-center">
-              <p className="font-medium text-muted-foreground text-sm uppercase">
-                Challenge
-              </p>
-              <p className="mt-1 text-lg">{prompt}</p>
-            </div>
+      {/* Type-specific arena content */}
+      <div className="flex-1 overflow-hidden">
+        {type === "draw" && (
+          <DrawArena
+            userId={user._id}
+            participants={participants}
+            isSpectator={isSpectator}
+            elements={elements}
+            cursors={cursors}
+            onElementsChange={sendElements}
+            onCursorMove={sendCursor}
+            prompt={prompt}
+          />
+        )}
 
-            {/* Game canvas placeholder */}
-            <div className="flex flex-1 items-center justify-center rounded-md border border-muted-foreground/30 border-dashed bg-muted/20">
-              <div className="text-center">
-                <p className="text-muted-foreground">
-                  {type === "draw"
-                    ? "Excalidraw canvas will render here"
-                    : type === "code"
-                      ? "Code editor will render here"
-                      : "Typing test will render here"}
-                </p>
-                <p className="mt-2 text-muted-foreground text-sm">
-                  Connected participants:{" "}
-                  {participants.map((p) => p.username).join(", ")}
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-1 items-center justify-center">
-            <div className="text-center">
-              <WifiOff className="mx-auto h-12 w-12 text-muted-foreground" />
-              <p className="mt-4 text-muted-foreground">
-                Disconnected from arena
-              </p>
-            </div>
-          </div>
+        {type === "code" && (
+          <CodeArena
+            userId={user._id}
+            participants={participants}
+            isSpectator={isSpectator}
+            codeByParticipant={codeByParticipant}
+            testResultsByParticipant={testResultsByParticipant}
+            cursors={cursors}
+            onCodeChange={(code) => {
+              // TODO: Integrate with actual code sync
+              console.log("Code changed:", code.length, "chars")
+            }}
+            onCursorMove={(line, col) => {
+              // For code, we might want to send line/col instead of x/y
+              sendCursor(line, col)
+            }}
+            prompt={prompt}
+          />
+        )}
+
+        {type === "typing" && (
+          <TypingArena
+            userId={user._id}
+            participants={participants}
+            isSpectator={isSpectator}
+            prompt={prompt}
+            progressByParticipant={typingProgress}
+            onProgressUpdate={(progress) => {
+              // TODO: Integrate with actual progress sync
+              console.log("Progress update:", progress)
+            }}
+          />
         )}
       </div>
     </div>

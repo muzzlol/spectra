@@ -81,6 +81,7 @@ function Arena() {
           maxPlayers={maxPlayers}
           timeLimit={timeLimit}
           prompt={arena.settings.prompt}
+          participantIds={arena.participants}
         />
       )
     case "ended":
