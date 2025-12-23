@@ -1,15 +1,47 @@
 import { DurableObject } from "cloudflare:workers"
+import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types"
+import type { ArenaType } from "~/convex/schema/arena.ts"
 import type {
   ArenaConfig,
+  ArenaData,
+  ArenaEndReason,
+  ArenaResults,
+  ClientAction,
   ClientMsg,
-  GameEndReason,
-  GameResults,
+  CodeData,
+  DrawData,
   Participant,
   ServerMsg,
   SessionAttachment
 } from "~/shared/arena-protocol"
 import logger from "~/shared/logger"
 import type { WorkerEnv } from "./env.d.ts"
+
+type ArenaState<T extends ArenaType = ArenaType> = {
+  config: ArenaConfig | null
+  startedAt: number | null
+  data: ArenaData<T> | null
+}
+
+export function createEmptyData<T extends ArenaType>(
+  arenaType: T
+): ArenaData<T> {
+  switch (arenaType) {
+    case "draw":
+      return { playerElements: {}, playerCursors: {} } as ArenaData<T>
+    case "code":
+      return {
+        language: "python",
+        playerCode: {},
+        testResults: {},
+        playerCursors: {}
+      } as ArenaData<T>
+    case "typing":
+      return { progress: {} } as ArenaData<T>
+    default:
+      throw new Error(`Unknown arena type: ${arenaType}`)
+  }
+}
 
 export default {
   fetch: async (req: Request, env: WorkerEnv) => {
@@ -40,7 +72,7 @@ export default {
     } else {
       const { exists, status } = (await validationRes.json()) as {
         exists: boolean
-        status: "lobby" | "active" | "ended" | null
+        status: "lobby" | "aisisisisctive" | "ended" | null
       }
       if (!exists) {
         return new Response(JSON.stringify({ error: "Arena not found" }), {
@@ -67,22 +99,20 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
   #state: ArenaState = {
     config: null,
     startedAt: null,
-    elements: []
+    data: null
   }
 
   constructor(ctx: DurableObjectState, env: WorkerEnv) {
     super(ctx, env)
     // restore state from hibernation
     ctx.blockConcurrencyWhile(async () => {
-      const stored = (await ctx.storage.get<ArenaState>("state")) ?? {
-        config: null,
-        startedAt: null,
-        elements: []
-      }
-      this.#state = {
-        config: stored.config ?? null,
-        startedAt: stored.startedAt ?? null,
-        elements: stored.elements ?? []
+      const stored = await ctx.storage.get<ArenaState>("state")
+      if (stored) {
+        this.#state = {
+          config: stored.config,
+          startedAt: stored.startedAt,
+          data: stored.data
+        }
       }
     })
   }
@@ -109,24 +139,35 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
       this.send(ws, { type: "error", message: "Binary messages not supported" })
       return
     }
-    const msg = this.parseMsg(raw)
-    if (!msg) {
-      this.send(ws, { type: "error", message: "Invalid message format" })
-      return
+    let msg: ClientMsg<ArenaType>
+    try {
+      msg = JSON.parse(raw)
+    } catch {
+      return this.send(ws, { type: "error", message: "Invalid message format" })
     }
 
-    switch (msg.type) {
-      case "init":
-        await this.handleInit(ws, msg)
+    if (msg.type === "leave") {
+      return ws.close(1000, "Player left")
+    }
+    if (msg.type === "init") {
+      return this.handleInit(ws, msg)
+    }
+    if (!this.#state.config) {
+      return this.send(ws, { type: "error", message: "Arena not initialized" })
+    }
+
+    const arenaType = this.#state.config.type
+
+    const action = msg as ClientAction<ArenaType>
+    switch (arenaType) {
+      case "draw":
+        await this.handleDraw(ws, action as ClientAction<"draw">)
         break
-      case "cursor":
-        await this.handleCursor(ws, msg.x, msg.y)
+      case "code":
+        // await this.handleCode(ws, action as ClientAction<"code">)
         break
-      case "element_change":
-        await this.handleElementChange(ws, msg.elements)
-        break
-      case "leave":
-        ws.close(1000, "Player left")
+      case "typing":
+        // await this.handleTyping(ws, action as ClientAction<"typing">)
         break
     }
   }
@@ -142,6 +183,7 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
         code: _code,
         reason: _reason
       })
+      this.removePlayerData(attachment.participantId)
       this.broadcast(
         { type: "participant_left", participantId: attachment.participantId },
         ws
@@ -183,7 +225,7 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
 
   private async handleInit(
     ws: WebSocket,
-    msg: Extract<ClientMsg, { type: "init" }>
+    msg: Extract<ClientMsg<ArenaType>, { type: "init" }>
   ) {
     const { userId, username, config } = msg
 
@@ -201,10 +243,11 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
         ws.close(1002, "Initialization required")
         return
       }
+      logger.info({ message: "Initializing arena", config })
 
-      this.#state.startedAt = Date.now()
-      this.#state.elements = []
       this.#state.config = config
+      this.#state.startedAt = Date.now()
+      this.#state.data = createEmptyData(config.type)
 
       await this.ctx.storage.put("state", this.#state)
       // start tick loop (broadcasts time every second)
@@ -223,9 +266,9 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
     const participants = this.getParticipants()
     const timeRemaining = this.getTimeRemaining()
 
-    const state: Extract<ServerMsg, { type: "state" }> = {
+    const state: Extract<ServerMsg<ArenaType>, { type: "state" }> = {
       type: "state",
-      elements: this.#state.elements,
+      arenaState: this.#state.data,
       participants,
       timeRemaining
     }
@@ -241,39 +284,53 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
     )
   }
 
-  private async handleCursor(ws: WebSocket, x: number, y: number) {
+  private async handleDraw(ws: WebSocket, msg: ClientAction<"draw">) {
     const attachment = this.getAttachment(ws)
     if (!attachment) return
 
-    this.broadcast(
-      {
-        type: "cursor",
-        participantId: attachment.participantId,
-        x,
-        y
-      },
-      ws
-    )
+    const data = this.#state.data as DrawData
+    switch (msg.type) {
+      case "cursor":
+        return this.handleCursorUpdate(ws, data, attachment, msg.x, msg.y)
+      case "canvas_update":
+        return this.handleCanvasUpdate(ws, data, attachment, msg.elements)
+    }
   }
 
-  private async handleElementChange(ws: WebSocket, elements: unknown[]) {
-    const attachment = this.getAttachment(ws)
-    if (!attachment) return
-
-    this.#state.elements = elements
+  private async handleCursorUpdate(
+    ws: WebSocket,
+    data: DrawData,
+    attachment: SessionAttachment,
+    x: number,
+    y: number
+  ) {
+    data.playerCursors[attachment.participantId] = { x, y }
     this.ctx.storage.put("state", this.#state)
+    this.broadcast(
+      { type: "cursor", participantId: attachment.participantId, x, y },
+      ws
+    )
+  }
 
+  private async handleCanvasUpdate(
+    ws: WebSocket,
+    data: DrawData,
+    attachment: SessionAttachment,
+    elements: ExcalidrawElement[]
+  ) {
+    data.playerElements[attachment.participantId] = elements
+    this.ctx.storage.put("state", this.#state)
     this.broadcast(
       {
-        type: "element_change",
-        elements,
-        from: attachment.participantId
+        type: "canvas_update",
+        elements: elements,
+        participantId: attachment.participantId
       },
       ws
     )
   }
 
-  private async finalize(reason: GameEndReason) {
+  private async finalize(reason: ArenaEndReason) {
     const config = this.#state.config
     if (!config) {
       logger.warn({ message: "Finalize called but no config found", reason })
@@ -292,17 +349,17 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
       ? Math.floor((Date.now() - this.#state.startedAt) / 1000)
       : 0
 
-    const results: GameResults = {
+    const results: ArenaResults = {
       arenaId: config.arenaId,
       endReason: reason,
       duration,
       participants,
-      finalElements: this.#state.elements
+      finalData: this.#state.data ?? undefined
     }
 
     await this.saveToConvex(results)
 
-    this.broadcast({ type: "game_over", reason, results })
+    this.broadcast({ type: "arena_over", reason, results })
 
     for (const socket of this.ctx.getWebSockets()) {
       socket.close(1000, `Game ended: ${reason}`)
@@ -312,7 +369,7 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
     await this.ctx.storage.deleteAll()
   }
 
-  private async saveToConvex(results: GameResults) {
+  private async saveToConvex(results: ArenaResults) {
     const siteUrl = this.env.CONVEX_SITE_URL
     const serviceSecret = this.env.CONVEX_SERVICE_SECRET
 
@@ -362,6 +419,29 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
     return ws.deserializeAttachment() as SessionAttachment | null
   }
 
+  private removePlayerData(participantId: string) {
+    const data = this.#state.data
+    if (!data) return
+    const arenaType = this.#state.config?.type
+    switch (arenaType) {
+      case "draw": {
+        const drawData = data as DrawData
+        delete drawData.playerCursors[participantId]
+        break
+      }
+      case "code": {
+        const codeData = data as CodeData
+        delete codeData.testResults[participantId]
+        delete codeData.playerCursors[participantId]
+        break
+      }
+      case "typing": {
+        break
+      }
+    }
+    this.ctx.storage.put("state", this.#state)
+  }
+
   private getTimeRemaining(): number {
     if (!this.#state.config || !this.#state.startedAt) return 0
     const elapsed = (Date.now() - this.#state.startedAt) / 1000
@@ -369,25 +449,22 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
   }
 
   private getParticipants(): Participant[] {
-    const participants = this.ctx
+    return this.ctx
       .getWebSockets()
       .map((socket) => this.getAttachment(socket))
-      .filter(
-        (attachment): attachment is SessionAttachment => attachment !== null
-      )
-      .map((attachment) => ({
-        id: attachment.participantId,
-        username: attachment.username,
-        joinedAt: attachment.joinedAt
+      .filter((a): a is SessionAttachment => a !== null)
+      .map((a) => ({
+        id: a.participantId,
+        username: a.username,
+        joinedAt: a.joinedAt
       }))
-    return participants
   }
 
-  private send(ws: WebSocket, msg: ServerMsg) {
+  private send(ws: WebSocket, msg: ServerMsg<ArenaType>) {
     ws.send(JSON.stringify(msg))
   }
 
-  private broadcast(msg: ServerMsg, exclude?: WebSocket) {
+  private broadcast(msg: ServerMsg<ArenaType>, exclude?: WebSocket) {
     const data = JSON.stringify(msg)
 
     for (const socket of this.ctx.getWebSockets()) {
@@ -396,23 +473,4 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
       }
     }
   }
-
-  private parseMsg(raw: string): ClientMsg | null {
-    try {
-      return JSON.parse(raw) as ClientMsg
-    } catch (error) {
-      logger.error({
-        message: "Failed to parse WebSocket message",
-        raw,
-        error: error instanceof Error ? error.message : String(error)
-      })
-      return null
-    }
-  }
-}
-
-type ArenaState = {
-  config: ArenaConfig | null
-  startedAt: number | null
-  elements: unknown[]
 }

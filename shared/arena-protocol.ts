@@ -1,8 +1,8 @@
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types"
 import type { ArenaMode, ArenaType } from "~/convex/schema/arena"
-export type ArenaConfig<T extends ArenaType> = {
+export type ArenaConfig = {
   arenaId: string
-  type: T
+  type: ArenaType
   mode: ArenaMode
   prompt: string
   timeLimit: number
@@ -10,7 +10,7 @@ export type ArenaConfig<T extends ArenaType> = {
 }
 
 export type ArenaState<T extends ArenaType> = {
-  config: ArenaConfig<T> | null
+  config: ArenaConfig | null
   startedAt: number | null
   data: ArenaData<T> | null
 }
@@ -33,6 +33,9 @@ export type CodeData = {
   testResults: Record<string, RunResult[]>
   playerCursors: Record<string, CursorPos> // x: line, y: col
 }
+export type TypingData = {
+  progress: Record<string, TypingProgress>
+}
 
 export type CanvasUpdate = {
   type: "canvas_update"
@@ -42,10 +45,6 @@ export type RunResult = {
   passed: boolean
   output: string
   time?: number
-}
-
-export type TypingData = {
-  progress: Record<string, TypingProgress>
 }
 
 export type TypingProgress = {
@@ -67,7 +66,7 @@ export type CodeRun = { type: "run" }
 export type RunResultUpdate = { type: "run_result"; result: RunResult[] }
 
 export type ClientMsg<T extends ArenaType> =
-  | { type: "init"; userId: string; username: string; config?: ArenaConfig<T> }
+  | { type: "init"; userId: string; username: string; config?: ArenaConfig }
   | { type: "leave" }
   | ClientAction<T>
 
@@ -90,13 +89,13 @@ export type ServerMsg<T extends ArenaType> =
   | {
       type: "state"
       participants: Participant[]
-      gameState: ArenaData<T> | null
+      arenaState: ArenaData<T> | null
       timeRemaining: number
     }
   | { type: "tick"; timeRemaining: number }
   | { type: "participant_joined"; participant: Participant }
   | { type: "participant_left"; participantId: string }
-  | { type: "game_over"; reason: GameEndReason; results: GameResults }
+  | { type: "arena_over"; reason: ArenaEndReason; results: ArenaResults }
   | { type: "error"; message: string }
   | ServerEvent<T>
 
@@ -127,16 +126,16 @@ export type SessionAttachment = { participantId: string } & Pick<
   Participant,
   "username" | "joinedAt"
 >
-export type GameEndReason = "completed" | "host_left" | "abandoned"
+export type ArenaEndReason = "completed" | "host_left" | "abandoned"
 
-export type GameResults = {
+export type ArenaResults = {
   arenaId: string
-  endReason: GameEndReason
+  endReason: ArenaEndReason
   duration: number
   participants: Array<
     Participant & {
       score?: number
     }
   >
-  finalElements?: unknown[] // TODO: figure out what to do with this
+  finalData?: ArenaData<ArenaType>
 }
