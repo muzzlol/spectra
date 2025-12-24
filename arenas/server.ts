@@ -72,7 +72,7 @@ export default {
     } else {
       const { exists, status } = (await validationRes.json()) as {
         exists: boolean
-        status: "lobby" | "aisisisisctive" | "ended" | null
+        status: "lobby" | "active" | "ended" | null
       }
       if (!exists) {
         return new Response(JSON.stringify({ error: "Arena not found" }), {
@@ -134,11 +134,7 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
     return new Response(null, { status: 101, webSocket: client })
   }
 
-  async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer) {
-    if (typeof raw !== "string") {
-      this.send(ws, { type: "error", message: "Binary messages not supported" })
-      return
-    }
+  async webSocketMessage(ws: WebSocket, raw: string) {
     let msg: ClientMsg<ArenaType>
     try {
       msg = JSON.parse(raw)
