@@ -1,5 +1,5 @@
 import { httpRouter } from "convex/server"
-import type { GameResults } from "~/shared/arena-protocol"
+import type { ArenaResults } from "~/shared/arena-protocol"
 import { internal } from "./_generated/api"
 import type { Id } from "./_generated/dataModel"
 import { httpAction } from "./_generated/server"
@@ -66,8 +66,8 @@ http.route({
 
     const body = await req.json()
 
-    const { arenaId, endReason, duration, participants, finalElements } =
-      body as GameResults
+    const { arenaId, endReason, duration, participants, finalData } =
+      body as ArenaResults
 
     if (!arenaId) {
       return new Response(JSON.stringify({ error: "arenaId required" }), {
@@ -81,7 +81,7 @@ http.route({
       endReason,
       duration,
       participants,
-      finalElements
+      finalData
     })
 
     return new Response(JSON.stringify({ success: true }), {

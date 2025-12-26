@@ -352,7 +352,7 @@ export const finalizeFromDO = internalMutation({
         score: v.optional(v.number())
       })
     ),
-    finalElements: v.optional(v.array(v.any()))
+    finalData: v.optional(v.any())
   },
   returns: v.null(),
   handler: async (ctx, args) => {

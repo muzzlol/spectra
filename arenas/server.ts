@@ -193,7 +193,6 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
 
     const remaining = this.ctx.getWebSockets()
     if (remaining.length === 0) {
-      await this.ctx.storage.deleteAlarm()
       await this.finalize("abandoned")
     }
   }
