@@ -11,7 +11,7 @@
 - PREFER single word variable names where possible
 - Only create an abstraction if it's actually needed
 - Prefer clear function/variable names over inline comments
-- use bun and bunx
+- use bun as package manager and don't edit package.json manually, use bun commands.
 
 ## React
 

@@ -1,3 +1,7 @@
 {
-    "setup-worktree": ["bun i", "cp $ROOT_WORKTREE_PATH/.env.local .env.local", "chmod +x scripts/*.sh"]
+  "setup-worktree": [
+    "bun i",
+    "cp $ROOT_WORKTREE_PATH/.env.local .env.local",
+    "chmod +x scripts/*.sh"
+  ]
 }
