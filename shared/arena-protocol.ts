@@ -18,13 +18,13 @@ export type Attributed<T> = T & { participantId: string }
 
 export type ArenaEndReason = "completed" | "host_left" | "abandoned"
 
-export type CursorPos = { x: number; y: number }
+export type CursorPos = { x: number; y: number; timestamp?: number }
 
 // ===== ARENA CONFIGURATION =====
 
-export type ArenaConfig = {
+export type ArenaConfig<T extends ArenaType> = {
   arenaId: string
-  type: ArenaType
+  type: T
   mode: ArenaMode
   prompt: string
   timeLimit: number
@@ -33,13 +33,13 @@ export type ArenaConfig = {
 
 // ===== ARENA DATA TYPES =====
 
-export type ArenaData<T extends ArenaType> = T extends "draw"
-  ? DrawData
-  : T extends "code"
-    ? CodeData
-    : T extends "typing"
-      ? TypingData
-      : never
+export type ArenaDataMap = {
+  draw: DrawData
+  code: CodeData
+  typing: TypingData
+}
+
+export type ArenaData<T extends ArenaType> = ArenaDataMap[T]
 
 export type DrawData = {
   playerElements: Record<string, ExcalidrawElement[]>
@@ -88,34 +88,38 @@ export type TypingProgressUpdate = {
   progress: TypingProgress
 }
 
-export type ClientAction<T extends ArenaType> = T extends "draw"
-  ? DrawAction
-  : T extends "code"
-    ? CodeAction
-    : T extends "typing"
-      ? TypingAction
-      : never
+export type ActionMap = {
+  draw: CursorUpdate | CanvasUpdate
+  code: CursorUpdate | CodeUpdate | CodeRun
+  typing: TypingProgressUpdate
+}
 
-export type DrawAction = CursorUpdate | CanvasUpdate
-export type CodeAction = CursorUpdate | CodeUpdate | CodeRun
-export type TypingAction = TypingProgressUpdate
+export type ClientAction<T extends ArenaType> = ActionMap[T]
+
+export type DrawAction = ActionMap["draw"]
+export type CodeAction = ActionMap["code"]
+export type TypingAction = ActionMap["typing"]
 
 // ===== CLIENT MESSAGES =====
 
 export type ClientMsg<T extends ArenaType> =
-  | { type: "init"; userId: string; username: string; config?: ArenaConfig }
+  | { type: "init"; userId: string; username: string; config: ArenaConfig<T> }
   | { type: "leave" }
   | ClientAction<T>
 
 // ===== SERVER-SIDE EVENTS =====
 
-export type ServerEvent<T extends ArenaType> = T extends "draw"
-  ? DrawEvent
-  : T extends "code"
-    ? CodeEvent
-    : T extends "typing"
-      ? TypingEvent
-      : never
+export type EventMap = {
+  draw: Attributed<CursorUpdate> | Attributed<CanvasUpdate>
+  code:
+    | Attributed<CursorUpdate>
+    | Attributed<CodeUpdate>
+    | Attributed<CodeRun>
+    | Attributed<RunResultUpdate>
+  typing: Attributed<TypingProgressUpdate>
+}
+
+export type ServerEvent<T extends ArenaType> = EventMap[T]
 
 export type DrawEvent = Attributed<CursorUpdate> | Attributed<CanvasUpdate>
 export type CodeEvent =
@@ -132,7 +136,7 @@ export type ServerMsg<T extends ArenaType> =
   | {
       type: "state"
       participants: Participant[]
-      arenaState: ArenaData<T> | null
+      data: ArenaData<T> | null
       timeRemaining: number
     }
   | { type: "tick"; timeRemaining: number }
@@ -154,4 +158,54 @@ export type ArenaResults = {
     }
   >
   finalData?: ArenaData<ArenaType>
+}
+
+// ===== HELPER FUNCTIONS =====
+
+export function createEmptyData<T extends ArenaType>(
+  arenaType: T
+): ArenaData<T> {
+  switch (arenaType) {
+    case "draw":
+      return { playerElements: {}, playerCursors: {} } as ArenaData<T>
+    case "code":
+      return {
+        language: "python",
+        playerCode: {},
+        testResults: {},
+        playerCursors: {}
+      } as ArenaData<T>
+    case "typing":
+      return { progress: {} } as ArenaData<T>
+    default: {
+      const _exhaustive: never = arenaType
+      throw new Error(`Unknown arena type: ${_exhaustive}`)
+    }
+  }
+}
+
+export const removePlayerDataHelper = (
+  participantId: string,
+  type: ArenaType,
+  data: ArenaData<ArenaType>
+) => {
+  switch (type) {
+    case "draw": {
+      const drawData = data as DrawData
+      delete drawData.playerCursors[participantId]
+      return drawData
+    }
+    case "code": {
+      const codeData = data as CodeData
+      delete codeData.playerCursors[participantId]
+      return codeData
+    }
+    case "typing": {
+      return data
+    }
+    default: {
+      const _exhaustive: never = type
+      throw new Error(`Unknown arena type: ${_exhaustive}`)
+    }
+  }
 }

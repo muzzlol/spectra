@@ -8,39 +8,23 @@ import type {
   ArenaResults,
   ClientAction,
   ClientMsg,
-  CodeData,
   DrawData,
   Participant,
   ServerMsg,
   SessionAttachment
 } from "~/shared/arena-protocol"
+import {
+  createEmptyData,
+  removePlayerDataHelper
+} from "~/shared/arena-protocol"
+
 import logger from "~/shared/logger"
 import type { WorkerEnv } from "./env.d.ts"
 
 type ArenaState<T extends ArenaType = ArenaType> = {
-  config: ArenaConfig | null
+  config: ArenaConfig<T> | null
   startedAt: number | null
   data: ArenaData<T> | null
-}
-
-export function createEmptyData<T extends ArenaType>(
-  arenaType: T
-): ArenaData<T> {
-  switch (arenaType) {
-    case "draw":
-      return { playerElements: {}, playerCursors: {} } as ArenaData<T>
-    case "code":
-      return {
-        language: "python",
-        playerCode: {},
-        testResults: {},
-        playerCursors: {}
-      } as ArenaData<T>
-    case "typing":
-      return { progress: {} } as ArenaData<T>
-    default:
-      throw new Error(`Unknown arena type: ${arenaType}`)
-  }
 }
 
 export default {
@@ -263,7 +247,7 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
 
     const state: Extract<ServerMsg<ArenaType>, { type: "state" }> = {
       type: "state",
-      arenaState: this.#state.data,
+      data: this.#state.data,
       participants,
       timeRemaining
     }
@@ -416,24 +400,9 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
 
   private removePlayerData(participantId: string) {
     const data = this.#state.data
-    if (!data) return
     const arenaType = this.#state.config?.type
-    switch (arenaType) {
-      case "draw": {
-        const drawData = data as DrawData
-        delete drawData.playerCursors[participantId]
-        break
-      }
-      case "code": {
-        const codeData = data as CodeData
-        delete codeData.testResults[participantId]
-        delete codeData.playerCursors[participantId]
-        break
-      }
-      case "typing": {
-        break
-      }
-    }
+    if (!data || !arenaType) return
+    this.#state.data = removePlayerDataHelper(participantId, arenaType, data)
     this.ctx.storage.put("state", this.#state)
   }
 
