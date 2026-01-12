@@ -103,7 +103,7 @@ export type TypingAction = ActionMap["typing"]
 // ===== CLIENT MESSAGES =====
 
 export type ClientMsg<T extends ArenaType> =
-  | { type: "init"; userId: string; username: string; config: ArenaConfig<T> }
+  | { type: "init"; userId: string; username: string; config?: ArenaConfig<T> }
   | { type: "leave" }
   | ClientAction<T>
 
