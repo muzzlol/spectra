@@ -1,0 +1,125 @@
+# Worktrunk Project Configuration
+# Copy to: <repo>/.config/wt.toml
+#
+# This file defines project-specific hooks that run automatically during
+# worktree operations. It should be checked into git and shared across all
+# developers working on the project.
+
+# Available template variables (all hooks):
+#   {{ repo }}           - Repository name (e.g., "my-project")
+#   {{ repo_path }}      - Absolute path to repository (e.g., "/path/to/my-project")
+#   {{ branch }}         - Raw branch name (e.g., "feature/foo")
+#   {{ worktree_path }}  - Absolute path to worktree (e.g., "/path/to/my-project.feature-foo")
+#
+# Merge-related hooks also support:
+#   {{ target }}    - Target branch for the merge (e.g., "main" default branch)
+#
+# Filters:
+#   {{ branch | sanitize }}  - Replace / and \ with - (e.g., "feature-foo")
+#   {{ branch | hash_port }} - Hash string to deterministic port (10000-19999)
+
+# Post-Create Hook
+# Runs SEQUENTIALLY and BLOCKS until complete
+# The worktree switch won't complete until these finish
+# Commands run one after another in the worktree directory
+#
+# Format options:
+# 1. Single string:
+#    post-create = "npm install"
+#
+# 2. Named table (runs sequentially in declaration order):
+
+
+[post-create]
+install = "bun install"
+env = "cp {{ repo_path }}/.env.local {{ worktree_path }}/.env.local"
+chmod = "chmod +x {{ worktree_path }}/scripts/*.sh"
+
+
+# Post-Start Hook
+# Runs in BACKGROUND as detached processes (parallel)
+# Use for: uv sync, npm install, bundle install, build, dev servers, file watchers,
+# downloading assets too large for git (images, ML models, binaries), long-running tasks
+# The worktree switch completes immediately, these run in parallel
+# Output is logged to .git/wt-logs/{branch}-{source}-post-start-{name}.log (source: user/project)
+#
+# Format options:
+# 1. Single string:
+#    post-start = "npm run dev"
+#
+# 2. Named table (runs in parallel):
+# [post-start]
+# server = "npm run dev"
+# watch = "npm run watch"
+
+# Pre-Commit Hook
+# Runs SEQUENTIALLY before committing changes during merge (blocking, fail-fast)
+# All commands must exit with code 0 for commit to proceed
+# Runs for both squash and no-squash merge modes
+# Use for: formatters, linters, quick validation
+#
+# Single command:
+# pre-commit = "cargo fmt -- --check"
+#
+# Multiple commands:
+# [pre-commit]
+# format = "cargo fmt -- --check"
+# lint = "cargo clippy -- -D warnings"
+
+# Pre-Merge Hook
+# Runs SEQUENTIALLY before merging to target branch (blocking, fail-fast)
+# All commands must exit with code 0 for merge to proceed
+# Use for: tests, linters, build verification before merging
+#
+# Single command:
+# pre-merge = "cargo test"
+#
+# Multiple commands:
+# [pre-merge]
+# test = "cargo test"
+# build = "cargo build --release"
+
+# Post-Merge Hook
+# Runs SEQUENTIALLY in the worktree for the target branch if it exists, otherwise the main worktree (blocking)
+# Runs after push and cleanup complete
+# Use for: updating production builds, notifications, cleanup
+#
+# Single command:
+# post-merge = "cargo install --path ."
+#
+# Multiple commands:
+# [post-merge]
+# install = "cargo install --path ."
+# notify = "echo 'Merged!'"
+
+# Example: Node.js Project
+# [post-create]
+# install = "npm ci"
+#
+# [post-start]
+# server = "npm run dev"
+#
+# [pre-merge]
+# lint = "npm run lint"
+# test = "npm test"
+
+# Example: Rust Project
+# [post-create]
+# build = "cargo build"
+#
+# [pre-merge]
+# format = "cargo fmt -- --check"
+# clippy = "cargo clippy -- -D warnings"
+# test = "cargo test"
+#
+# post-merge = "cargo install --path ."
+
+# Example: Python Project
+# [post-create]
+# venv = "python -m venv .venv"
+# install = ".venv/bin/pip install -r requirements.txt"
+#
+# [pre-merge]
+# format = ".venv/bin/black --check ."
+# lint = ".venv/bin/ruff check ."
+# test = ".venv/bin/pytest"
