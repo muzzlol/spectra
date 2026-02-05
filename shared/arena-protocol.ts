@@ -70,6 +70,13 @@ export type TypingProgress = {
   finished: boolean
 }
 
+// ===== CLIENT MESSAGES =====
+
+export type ClientMsg<T extends ArenaType> =
+  | { type: "init"; userId: string; username: string; config?: ArenaConfig<T> }
+  | { type: "leave" }
+  | ClientAction<T>
+
 // ===== CLIENT-SIDE ACTIONS =====
 
 export type CursorUpdate = { type: "cursor" } & CursorPos
@@ -100,36 +107,6 @@ export type DrawAction = ActionMap["draw"]
 export type CodeAction = ActionMap["code"]
 export type TypingAction = ActionMap["typing"]
 
-// ===== CLIENT MESSAGES =====
-
-export type ClientMsg<T extends ArenaType> =
-  | { type: "init"; userId: string; username: string; config?: ArenaConfig<T> }
-  | { type: "leave" }
-  | ClientAction<T>
-
-// ===== SERVER-SIDE EVENTS =====
-
-export type EventMap = {
-  draw: Attributed<CursorUpdate> | Attributed<CanvasUpdate>
-  code:
-    | Attributed<CursorUpdate>
-    | Attributed<CodeUpdate>
-    | Attributed<CodeRun>
-    | Attributed<RunResultUpdate>
-  typing: Attributed<TypingProgressUpdate>
-}
-
-export type ServerEvent<T extends ArenaType> = EventMap[T]
-
-export type DrawEvent = Attributed<CursorUpdate> | Attributed<CanvasUpdate>
-export type CodeEvent =
-  | Attributed<CursorUpdate>
-  | Attributed<CodeUpdate>
-  | Attributed<CodeRun>
-  | Attributed<RunResultUpdate>
-
-export type TypingEvent = Attributed<TypingProgressUpdate>
-
 // ===== SERVER MESSAGES =====
 
 export type ServerMsg<T extends ArenaType> =
@@ -144,7 +121,30 @@ export type ServerMsg<T extends ArenaType> =
   | { type: "participant_left"; participantId: string }
   | { type: "arena_over"; reason: ArenaEndReason; results: ArenaResults }
   | { type: "error"; message: string }
-  | ServerEvent<T>
+  | { type: "mechanic"; event: ArenaEvent<T> }
+
+// ===== BROADCASTED ARENA EVENTS =====
+
+export type ArenaEventMap = {
+  draw: Attributed<CursorUpdate> | Attributed<CanvasUpdate>
+  code:
+    | Attributed<CursorUpdate>
+    | Attributed<CodeUpdate>
+    | Attributed<CodeRun>
+    | Attributed<RunResultUpdate>
+  typing: Attributed<TypingProgressUpdate>
+}
+
+export type ArenaEvent<T extends ArenaType> = ArenaEventMap[T]
+
+export type DrawEvent = Attributed<CursorUpdate> | Attributed<CanvasUpdate>
+export type CodeEvent =
+  | Attributed<CursorUpdate>
+  | Attributed<CodeUpdate>
+  | Attributed<CodeRun>
+  | Attributed<RunResultUpdate>
+
+export type TypingEvent = Attributed<TypingProgressUpdate>
 
 // ===== ARENA RESULTS =====
 

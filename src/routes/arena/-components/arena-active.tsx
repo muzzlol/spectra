@@ -5,6 +5,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { useCurrentUser } from "@/hooks/use-user"
 import type { Id } from "~/convex/_generated/dataModel"
 import type { ArenaMode, ArenaType } from "~/convex/schema/arena"
+import type { ArenaEvent } from "~/shared/arena-protocol"
 import { CodeArena } from "../-code/arena"
 import type { TestResult } from "../-code/pane"
 import { DrawArena } from "../-draw/arena"
@@ -24,6 +25,7 @@ interface ArenaActiveProps {
   participantIds?: Id<"users">[]
 }
 
+// WIP
 export function ArenaActive({
   arenaId,
   type,
@@ -34,11 +36,6 @@ export function ArenaActive({
   participantIds = []
 }: ArenaActiveProps) {
   const { user } = useCurrentUser()
-
-  // Type-specific state (will be managed by actual implementations)
-  const [codeByParticipant] = useState<Record<string, string>>({})
-  const [testResultsByParticipant] = useState<Record<string, TestResult[]>>({})
-  const [typingProgress] = useState<Record<string, TypingProgress>>({})
 
   const config = useMemo(
     () => ({
@@ -56,22 +53,19 @@ export function ArenaActive({
     console.log("Game over:", reason)
   }, [])
 
-  const {
-    connectionState,
-    participants,
-    elements,
-    cursors,
-    timeRemaining,
-    error,
-    sendElements,
-    sendCursor
-  } = useArenaSocket({
-    arenaId,
-    userId: user?._id ?? "",
-    username: user?.username ?? "Anonymous",
-    config,
-    onGameOver: handleGameOver
-  })
+  const handleArenaEvent = useCallback((event: ArenaEvent<ArenaType>) => {
+    console.log("Arena event:", event)
+  }, [])
+
+  const { connectionState, participants, timeRemaining, error, sendAction } =
+    useArenaSocket({
+      arenaId,
+      userId: user?._id ?? "",
+      username: user?.username ?? "Anonymous",
+      config,
+      onGameOver: handleGameOver,
+      onArenaEvent: handleArenaEvent
+    })
 
   // Spectator detection: user is not in the participant list
   const isSpectator = user

@@ -1,47 +1,50 @@
 import { useCallback, useState } from "react"
-import useWebSocket from "react-use-websocket"
+import useWebSocket, { type ReadyState } from "react-use-websocket"
+import type { ArenaType } from "~/convex/schema/arena.ts"
 import type {
   ArenaConfig,
+  ArenaData,
+  ArenaEndReason,
+  ArenaEvent,
+  ArenaResults,
+  ClientAction,
   ClientMsg,
   Participant,
   ServerMsg
 } from "~/shared/arena-protocol"
 
-/** Type-agnostic cursor data - pane components interpret based on arena type */
-export type CursorData = {
-  participantId: string
-  x: number
-  y: number
-  timestamp: number
+type useArenaSocketOptions<T extends ArenaType> = {
+  arenaId: string
+  userId: string
+  username: string
+  config: ArenaConfig<T>
+  onGameOver?: (reason: ArenaEndReason, results: ArenaResults) => void
+  onArenaEvent: (event: ArenaEvent<T>) => void
 }
 
-type ArenaSocketState = {
+type useArenaSocketReturn<T extends ArenaType> = ArenaClientState<T> & {
+  connectionState: ReadyState
+  sendAction: (action: ClientAction<T>) => void
+}
+
+type ArenaClientState<T extends ArenaType> = {
   participants: Participant[]
-  elements: unknown[]
-  cursors: Map<string, CursorData>
+  data: ArenaData<T> | null
   timeRemaining: number
   error: string | null
 }
 
-type UseArenaSocketOptions = {
-  arenaId: string
-  userId: string
-  username: string
-  config: ArenaConfig
-  onGameOver?: (reason: string) => void
-}
-
-export function useArenaSocket({
+export function useArenaSocket<T extends ArenaType>({
   arenaId,
   userId,
   username,
   config,
-  onGameOver
-}: UseArenaSocketOptions) {
-  const [state, setState] = useState<ArenaSocketState>({
+  onGameOver,
+  onArenaEvent
+}: useArenaSocketOptions<T>): useArenaSocketReturn<T> {
+  const [state, setState] = useState<ArenaClientState<T>>({
     participants: [],
-    elements: [],
-    cursors: new Map(),
+    data: null,
     timeRemaining: config.timeLimit,
     error: null
   })
@@ -59,10 +62,7 @@ export function useArenaSocket({
     share: false,
     shouldReconnect: (closeEvent) => {
       const code = closeEvent.code
-      if (code === 1000 || code === 1002) {
-        return false
-      }
-      return true
+      return code !== 1000 && code !== 1002
     },
     onOpen: () => {
       console.log("ArenaWS opened")
@@ -71,67 +71,44 @@ export function useArenaSocket({
         userId,
         username,
         config
-      } satisfies ClientMsg)
+      } satisfies ClientMsg<T>)
     },
     onClose: () => {
       console.log("ArenaWS closed")
     },
     onMessage: (event) => {
-      const message = JSON.parse(event.data) as ServerMsg
+      const message = JSON.parse(event.data) as ServerMsg<T>
 
       switch (message.type) {
+        case "mechanic":
+          onArenaEvent(message.event)
+          break
+
         case "state":
           setState((prev) => ({
             ...prev,
             participants: message.participants,
-            elements: message.elements,
+            data: message.data,
             timeRemaining: message.timeRemaining
           }))
           break
 
-        case "participant_joined":
+        case "participant_joined": {
           setState((prev) => ({
             ...prev,
             participants: [...prev.participants, message.participant]
           }))
           break
-
-        case "participant_left": {
-          setState((prev) => {
-            const newCursors = new Map(prev.cursors)
-            newCursors.delete(message.participantId)
-            return {
-              ...prev,
-              participants: prev.participants.filter(
-                (p) => p.id !== message.participantId
-              ),
-              cursors: newCursors
-            }
-          })
-          break
         }
 
-        case "element_change":
+        case "participant_left":
           setState((prev) => ({
             ...prev,
-            elements: message.elements
+            participants: prev.participants.filter(
+              (p) => p.id !== message.participantId
+            )
           }))
           break
-
-        case "cursor": {
-          const cursorData: CursorData = {
-            participantId: message.participantId,
-            x: message.x,
-            y: message.y,
-            timestamp: Date.now()
-          }
-          setState((prev) => {
-            const newCursors = new Map(prev.cursors)
-            newCursors.set(message.participantId, cursorData)
-            return { ...prev, cursors: newCursors }
-          })
-          break
-        }
 
         case "tick":
           setState((prev) => ({
@@ -140,27 +117,25 @@ export function useArenaSocket({
           }))
           break
 
-        case "game_over":
-          onGameOver?.(message.reason)
+        case "arena_over":
+          onGameOver?.(message.reason, message.results)
           break
 
         case "error":
           setState((prev) => ({ ...prev, error: message.message }))
           break
+
+        default: {
+          const _exhaustive: never = message
+          throw new Error(`Unknown message type: ${_exhaustive}`)
+        }
       }
     }
   })
 
-  const sendElements = useCallback(
-    (elements: unknown[]) => {
-      sendJsonMessage({ type: "element_change", elements } satisfies ClientMsg)
-    },
-    [sendJsonMessage]
-  )
-
-  const sendCursor = useCallback(
-    (x: number, y: number) => {
-      sendJsonMessage({ type: "cursor", x, y } satisfies ClientMsg)
+  const sendAction = useCallback(
+    (action: ClientAction<T>) => {
+      sendJsonMessage(action)
     },
     [sendJsonMessage]
   )
@@ -168,7 +143,6 @@ export function useArenaSocket({
   return {
     ...state,
     connectionState: readyState,
-    sendElements,
-    sendCursor
+    sendAction
   }
 }
