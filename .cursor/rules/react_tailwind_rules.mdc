@@ -1,0 +1,16 @@
+---
+alwaysApply: true
+---
+## React
+
+- Avoid massive JSX blocks and compose smaller components
+- Colocate code that changes together
+- Avoid `useEffect` unless absolutely needed
+
+
+## Tailwind
+
+- Follow best practices
+- Avoid unnecessary utilities - keep it as minimal as possible
+- Utilize custom themes - create if needed
+- Always use v4 + global CSS file format + shadcn/ui
