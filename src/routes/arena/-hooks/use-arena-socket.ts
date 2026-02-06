@@ -127,7 +127,7 @@ export function useArenaSocket<T extends ArenaType>({
 
         default: {
           const _exhaustive: never = message
-          throw new Error(`Unknown message type: ${_exhaustive}`)
+          console.error(`Unknown message type: ${_exhaustive}`)
         }
       }
     }
