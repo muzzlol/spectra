@@ -5,6 +5,7 @@ import type {
   ArenaConfig,
   ArenaData,
   ArenaEndReason,
+  ArenaEvent,
   ArenaResults,
   ClientAction,
   ClientMsg,
@@ -285,7 +286,7 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
   ) {
     data.playerCursors[attachment.participantId] = { x, y }
     this.ctx.storage.put("state", this.#state)
-    this.broadcast(
+    this.broadcastMechanic(
       { type: "cursor", participantId: attachment.participantId, x, y },
       ws
     )
@@ -299,7 +300,7 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
   ) {
     data.playerElements[attachment.participantId] = elements
     this.ctx.storage.put("state", this.#state)
-    this.broadcast(
+    this.broadcastMechanic(
       {
         type: "canvas_update",
         elements: elements,
@@ -436,5 +437,9 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
         socket.send(data)
       }
     }
+  }
+
+  private broadcastMechanic(event: ArenaEvent<ArenaType>, exclude: WebSocket) {
+    this.broadcast({ type: "mechanic", event }, exclude)
   }
 }
