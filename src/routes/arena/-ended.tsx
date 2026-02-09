@@ -11,7 +11,7 @@ import {
 import type { Id } from "~/convex/_generated/dataModel"
 import type { ArenaMode, ArenaType } from "~/convex/schema/arena"
 import { MODE_CONFIG } from "~/convex/schema/arena"
-import { ParticipantList } from "./participant-list"
+import { ParticipantList } from "./-components/participant-list"
 
 interface ArenaEndedProps {
   arenaId: Id<"arenas">

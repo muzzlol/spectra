@@ -1,22 +1,25 @@
+import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types"
 import { Expand } from "lucide-react"
-import type { CursorData } from "../-hooks/use-arena-socket"
+import type { CursorPos } from "~/shared/arena-protocol"
+
+type CanvasCursor = CursorPos & { participantId: string }
 
 interface DrawCanvasProps {
   paneId: string
   ownerId: string
   ownerUsername: string
   isEditable: boolean
-  elements: unknown[]
-  cursors: CursorData[]
-  onElementsChange?: (elements: unknown[]) => void
+  elements: ExcalidrawElement[]
+  cursors: CanvasCursor[]
+  onElementsChange?: (elements: ExcalidrawElement[]) => void
   onCursorMove?: (x: number, y: number) => void
   onFocus?: () => void
 }
 
 export function DrawCanvas({
-  ownerId,
   ownerUsername,
   isEditable,
+  elements,
   cursors,
   onFocus
 }: DrawCanvasProps) {
@@ -56,6 +59,9 @@ export function DrawCanvas({
             <p className="text-sm">Excalidraw canvas</p>
             <p className="mt-1 text-xs">
               {isEditable ? "Draw here" : `Watching ${ownerUsername}`}
+            </p>
+            <p className="mt-2 text-xs">
+              {elements.length} element(s), {cursors.length} cursor(s)
             </p>
           </div>
         </div>

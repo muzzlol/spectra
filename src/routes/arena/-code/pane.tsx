@@ -1,10 +1,11 @@
 import { CheckCircle, Expand, XCircle } from "lucide-react"
-import type { CursorData } from "../-hooks/use-arena-socket"
+import type { CursorPos } from "~/shared/arena-protocol"
 
 /** Test case result status */
 export type TestResult = {
   passed: boolean
-  name: string
+  name?: string
+  output?: string
   time?: number
 }
 
@@ -15,7 +16,7 @@ interface CodePaneProps {
   isEditable: boolean
   code: string
   testResults?: TestResult[]
-  cursor?: CursorData
+  cursor?: CursorPos
   onCodeChange?: (code: string) => void
   onCursorMove?: (line: number, column: number) => void
   onFocus?: () => void
@@ -26,10 +27,24 @@ export function CodePane({
   isEditable,
   code,
   testResults = [],
+  cursor,
+  onCodeChange,
+  onCursorMove,
   onFocus
 }: CodePaneProps) {
   const passedCount = testResults.filter((r) => r.passed).length
   const totalCount = testResults.length
+
+  const emitCursor = (value: string, caretIndex: number) => {
+    if (!onCursorMove) return
+
+    const safeCaret = Math.max(0, caretIndex)
+    const prefix = value.slice(0, safeCaret)
+    const lines = prefix.split("\n")
+    const line = lines.length
+    const column = (lines.at(-1)?.length ?? 0) + 1
+    onCursorMove(line, column)
+  }
 
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden rounded-md border border-border bg-background">
@@ -82,9 +97,39 @@ export function CodePane({
       <div className="relative flex-1 overflow-auto">
         {/* Placeholder until code editor is integrated */}
         <div className="flex h-full w-full flex-col bg-muted/10">
-          <pre className="flex-1 overflow-auto p-3 font-mono text-sm">
-            {code || "// Start coding..."}
-          </pre>
+          {isEditable ? (
+            <textarea
+              value={code}
+              onChange={(event) => {
+                onCodeChange?.(event.target.value)
+                emitCursor(event.target.value, event.target.selectionStart ?? 0)
+              }}
+              onClick={(event) => {
+                emitCursor(
+                  event.currentTarget.value,
+                  event.currentTarget.selectionStart ?? 0
+                )
+              }}
+              onKeyUp={(event) => {
+                emitCursor(
+                  event.currentTarget.value,
+                  event.currentTarget.selectionStart ?? 0
+                )
+              }}
+              placeholder="// Start coding..."
+              spellCheck={false}
+              className="h-full w-full resize-none bg-transparent p-3 font-mono text-sm outline-none"
+            />
+          ) : (
+            <pre className="flex-1 overflow-auto p-3 font-mono text-sm">
+              {code || "// Waiting for code..."}
+            </pre>
+          )}
+          {!isEditable && cursor && (
+            <div className="shrink-0 border-border border-t px-3 py-1 font-mono text-muted-foreground text-xs">
+              Cursor: L{Math.round(cursor.x)} C{Math.round(cursor.y)}
+            </div>
+          )}
         </div>
       </div>
 
@@ -106,7 +151,7 @@ export function CodePane({
                 ) : (
                   <XCircle className="h-3 w-3" />
                 )}
-                {result.name}
+                {result.name ?? `Test ${i + 1}`}
               </span>
             ))}
           </div>

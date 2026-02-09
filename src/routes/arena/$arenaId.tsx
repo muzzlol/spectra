@@ -3,9 +3,9 @@ import { createFileRoute, notFound } from "@tanstack/react-router"
 import { Spinner } from "@/components/ui/spinner"
 import { api } from "~/convex/_generated/api"
 import type { Id } from "~/convex/_generated/dataModel"
-import { ArenaActive } from "./-components/arena-active"
-import { ArenaEnded } from "./-components/arena-ended"
-import { ArenaLobby } from "./-components/arena-lobby"
+import { ArenaActive } from "./-active"
+import { ArenaEnded } from "./-ended"
+import { ArenaLobby } from "./-lobby"
 import { GuestOverlay } from "./-components/guest-overlay"
 import { useArena } from "./-hooks/use-arena"
 
@@ -30,7 +30,6 @@ function Arena() {
     type,
     mode,
     user,
-    currentPlayerCount,
     maxPlayers,
     timeLimit,
     isUserLoading,
@@ -77,7 +76,6 @@ function Arena() {
           arenaId={arenaId}
           type={type}
           mode={mode}
-          currentPlayerCount={currentPlayerCount}
           maxPlayers={maxPlayers}
           timeLimit={timeLimit}
           prompt={arena.settings.prompt}
