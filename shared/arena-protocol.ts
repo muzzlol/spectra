@@ -95,17 +95,17 @@ export type TypingProgressUpdate = {
   progress: TypingProgress
 }
 
-export type ClientAction<T extends ArenaType> = ActionMap[T]
-
-export type DrawAction = ActionMap["draw"]
-export type CodeAction = ActionMap["code"]
-export type TypingAction = ActionMap["typing"]
-
 export type ActionMap = {
   draw: CursorUpdate | CanvasUpdate
   code: CursorUpdate | CodeUpdate | CodeRun
   typing: TypingProgressUpdate
 }
+
+export type DrawAction = ActionMap["draw"]
+export type CodeAction = ActionMap["code"]
+export type TypingAction = ActionMap["typing"]
+
+export type ClientAction<T extends ArenaType> = ActionMap[T]
 
 // ===== SERVER MESSAGES =====
 

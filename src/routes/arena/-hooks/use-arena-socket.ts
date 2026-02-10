@@ -123,7 +123,14 @@ export function useArenaSocket<T extends ArenaType>({
               participants: prev.participants.filter(
                 (participant) => participant.id !== message.participantId
               )
-sendJsonMessage({ type: "action", action } satisfies ClientMsg<T>)
+            }))
+            break
+
+          case "tick":
+            setState((prev) => ({
+              ...prev,
+              timeRemaining: message.timeRemaining
+            }))
             break
 
           case "arena_over":
@@ -141,13 +148,13 @@ sendJsonMessage({ type: "action", action } satisfies ClientMsg<T>)
         }
       }
     },
-    enabled && socketUrl !== null // <- connect flag
+    enabled && socketUrl !== null // <- wen connect flag
   )
 
   const sendAction = useCallback(
     (action: ClientAction<T>) => {
       if (!enabled || !socketUrl) return
-      sendJsonMessage(action)
+      sendJsonMessage({ type: "action", action } satisfies ClientMsg<T>)
     },
     [enabled, sendJsonMessage, socketUrl]
   )
