@@ -123,14 +123,7 @@ export function useArenaSocket<T extends ArenaType>({
               participants: prev.participants.filter(
                 (participant) => participant.id !== message.participantId
               )
-            }))
-            break
-
-          case "tick":
-            setState((prev) => ({
-              ...prev,
-              timeRemaining: message.timeRemaining
-            }))
+sendJsonMessage({ type: "action", action } satisfies ClientMsg<T>)
             break
 
           case "arena_over":
