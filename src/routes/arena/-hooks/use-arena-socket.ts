@@ -148,7 +148,7 @@ export function useArenaSocket<T extends ArenaType>({
         }
       }
     },
-    enabled
+    enabled && socketUrl !== null // <- connect flag
   )
 
   const sendAction = useCallback(

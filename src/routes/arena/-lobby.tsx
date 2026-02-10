@@ -87,6 +87,7 @@ export function ArenaLobby({
 
     if (!success) {
       toast.error("Failed to copy link to clipboard")
+      return
     }
 
     toast.success("Link copied to clipboard!")
