@@ -127,29 +127,17 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
       return this.send(ws, { type: "error", message: "Invalid message format" })
     }
 
-    if (msg.type === "leave") {
-      return ws.close(1000, "Player left")
-    }
-    if (msg.type === "init") {
-      return this.handleInit(ws, msg)
-    }
-    if (!this.#state.config) {
-      return this.send(ws, { type: "error", message: "Arena not initialized" })
-    }
-
-    const arenaType = this.#state.config.type
-
-    const action = msg as ClientAction<ArenaType>
-    switch (arenaType) {
-      case "draw":
-        await this.handleDraw(ws, action as ClientAction<"draw">)
-        break
-      case "code":
-        // await this.handleCode(ws, action as ClientAction<"code">)
-        break
-      case "typing":
-        // await this.handleTyping(ws, action as ClientAction<"typing">)
-        break
+    switch (msg.type) {
+      case "leave":
+        return ws.close(1000, "Player left")
+      case "init":
+        return this.handleInit(ws, msg)
+      case "action":
+        return this.handleAction(ws, msg.action)
+      default: {
+        const _exhaustive: never = msg
+        console.error(`Unknown message type: ${_exhaustive}`)
+      }
     }
   }
 
@@ -264,6 +252,26 @@ export class ArenaWSS extends DurableObject<WorkerEnv> {
     )
   }
 
+  private async handleAction(ws: WebSocket, msg: ClientAction<ArenaType>) {
+    if (!this.#state.config) {
+      return this.send(ws, { type: "error", message: "Arena not initialized" })
+    }
+    const arenaType = this.#state.config.type
+    switch (arenaType) {
+      case "draw":
+        return this.handleDraw(ws, msg as ClientAction<"draw">)
+      case "code":
+        return
+      // return this.handleCode(ws, msg as ClientAction<"code">)
+      case "typing":
+        return
+      // return this.handleTyping(ws, msg as ClientAction<"typing">)
+      default: {
+        const _exhaustive: never = arenaType
+        console.error(`Unsupported arena type: ${_exhaustive}`)
+      }
+    }
+  }
   private async handleDraw(ws: WebSocket, msg: ClientAction<"draw">) {
     const attachment = this.getAttachment(ws)
     if (!attachment) return

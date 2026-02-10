@@ -26,6 +26,7 @@ type UseArenaSocketOptions<T extends ArenaType> = {
 type UseArenaSocketReturn<T extends ArenaType> = ArenaClientState<T> & {
   connectionState: ReadyState
   sendAction: (action: ClientAction<T>) => void
+  leave: () => void
 }
 
 type ArenaClientState<T extends ArenaType> = {
@@ -158,6 +159,10 @@ export function useArenaSocket<T extends ArenaType>({
     [enabled, sendJsonMessage, socketUrl]
   )
 
+  const leave = useCallback(() => {
+    sendJsonMessage({ type: "leave" } satisfies ClientMsg<T>)
+  }, [sendJsonMessage])
+
   const envError =
     enabled && !socketUrl ? "VITE_ARENA_HOST is not configured" : null
 
@@ -165,6 +170,7 @@ export function useArenaSocket<T extends ArenaType>({
     ...state,
     error: state.error ?? envError,
     connectionState: readyState,
-    sendAction
+    sendAction,
+    leave
   }
 }
