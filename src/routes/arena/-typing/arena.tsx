@@ -1,4 +1,3 @@
-import { useMemo } from "react"
 import type { TypingProgress } from "~/shared/arena-protocol"
 import type { ArenaComponentProps } from "../-props"
 import { WpmDisplay } from "./wpm-display"
@@ -18,7 +17,7 @@ export function TypingArena({
   const currentProgress = progressByParticipant[userId]
   const participantCount = participants.length
 
-  const previewText = useMemo(() => prompt.slice(0, 320), [prompt])
+  const previewText = prompt.slice(0, 320)
 
   return (
     <div className="flex h-full flex-col gap-4 p-4">

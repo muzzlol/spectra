@@ -181,55 +181,54 @@ export function ArenaActive({
     )
   }
 
-  let arenaContent: ReactNode
-  switch (type) {
-    case "draw":
-      arenaContent = (
-        <DrawArena
-          userId={user._id}
-          data={data as ArenaData<"draw"> | null}
-          participants={participants}
-          isSpectator={isSpectator}
-          prompt={prompt}
-          sendAction={sendAction}
-          eventBridge={bridgeRef.current as EventBridge<ArenaEvent<"draw">>}
-        />
-      )
-      break
+  const arenaContent = ((): ReactNode => {
+    switch (type) {
+      case "draw":
+        return (
+          <DrawArena
+            userId={user._id}
+            data={data as ArenaData<"draw"> | null}
+            participants={participants}
+            isSpectator={isSpectator}
+            prompt={prompt}
+            sendAction={sendAction}
+            eventBridge={bridgeRef.current as EventBridge<ArenaEvent<"draw">>}
+          />
+        )
 
-    case "code":
-      arenaContent = (
-        <CodeArena
-          userId={user._id}
-          data={data as ArenaData<"code"> | null}
-          participants={participants}
-          isSpectator={isSpectator}
-          prompt={prompt}
-          sendAction={sendAction}
-          eventBridge={bridgeRef.current as EventBridge<ArenaEvent<"code">>}
-        />
-      )
-      break
+      case "code":
+        return (
+          <CodeArena
+            userId={user._id}
+            data={data as ArenaData<"code"> | null}
+            participants={participants}
+            isSpectator={isSpectator}
+            prompt={prompt}
+            sendAction={sendAction}
+            eventBridge={bridgeRef.current as EventBridge<ArenaEvent<"code">>}
+          />
+        )
 
-    case "typing":
-      arenaContent = (
-        <TypingArena
-          userId={user._id}
-          data={data as ArenaData<"typing"> | null}
-          participants={participants}
-          isSpectator={isSpectator}
-          prompt={prompt}
-          sendAction={sendAction}
-          eventBridge={bridgeRef.current as EventBridge<ArenaEvent<"typing">>}
-        />
-      )
-      break
+      case "typing":
+        return (
+          <TypingArena
+            userId={user._id}
+            data={data as ArenaData<"typing"> | null}
+            participants={participants}
+            isSpectator={isSpectator}
+            prompt={prompt}
+            sendAction={sendAction}
+            eventBridge={bridgeRef.current as EventBridge<ArenaEvent<"typing">>}
+          />
+        )
 
-    default: {
-      const _exhaustive: never = type
-      console.error(`Unsupported arena type: ${_exhaustive}`)
+      default: {
+        const _exhaustive: never = type
+        console.error(`Unsupported arena type: ${_exhaustive}`)
+        return null
+      }
     }
-  }
+  })()
 
   return (
     <ArenaLayout
