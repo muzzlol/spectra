@@ -16,7 +16,7 @@ import {
   type ArenaType,
   MODE_CONFIG
 } from "~/convex/schema/arena"
-import { ParticipantList } from "./participant-list"
+import { ParticipantList } from "./-components/participant-list"
 
 interface ArenaLobbyProps {
   arenaId: Id<"arenas">
@@ -87,6 +87,7 @@ export function ArenaLobby({
 
     if (!success) {
       toast.error("Failed to copy link to clipboard")
+      return
     }
 
     toast.success("Link copied to clipboard!")

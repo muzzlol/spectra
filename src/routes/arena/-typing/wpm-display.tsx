@@ -1,13 +1,5 @@
 import { Trophy } from "lucide-react"
-import type { Participant } from "~/shared/arena-protocol"
-
-export type TypingProgress = {
-  participantId: string
-  charIndex: number
-  wpm: number
-  accuracy: number
-  finished: boolean
-}
+import type { Participant, TypingProgress } from "~/shared/arena-protocol"
 
 interface WpmDisplayProps {
   participants: Participant[]

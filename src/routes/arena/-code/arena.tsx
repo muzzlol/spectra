@@ -1,44 +1,59 @@
-import { useState } from "react"
-import type { Participant } from "~/shared/arena-protocol"
+import { useMemo, useState } from "react"
+import type { CursorPos, RunResult } from "~/shared/arena-protocol"
 import { FocusOverlay } from "../-components/focus-overlay"
 import { PaneGrid } from "../-components/pane-grid"
-import type { CursorData } from "../-hooks/use-arena-socket"
-import { CodePane, type TestResult } from "./pane"
+import type { ArenaComponentProps } from "../-props"
+import { CodePane } from "./pane"
 
-interface CodeArenaProps {
-  userId: string
-  participants: Participant[]
-  isSpectator: boolean
-  codeByParticipant: Record<string, string>
-  testResultsByParticipant: Record<string, TestResult[]>
-  cursors: Map<string, CursorData>
-  onCodeChange: (code: string) => void
-  onCursorMove: (line: number, column: number) => void
-  prompt: string
-}
+type CodeArenaProps = ArenaComponentProps<"code">
 
+// WIP
 export function CodeArena({
   userId,
   participants,
-  isSpectator,
-  codeByParticipant,
-  testResultsByParticipant,
-  cursors,
-  onCodeChange,
-  prompt
+  prompt,
+  data
 }: CodeArenaProps) {
   const [focusedPaneId, setFocusedPaneId] = useState<string | null>(null)
+  const codeByParticipant: Record<string, string> = data?.playerCode ?? {}
+  const testResultsByParticipant: Record<string, RunResult[]> =
+    data?.testResults ?? {}
+  const cursorsByParticipant: Record<string, CursorPos> =
+    data?.playerCursors ?? {}
 
-  // Sort participants so current user is first (if not spectator)
-  const sortedParticipants = [...participants].sort((a, b) => {
-    if (a.id === userId) return -1
-    if (b.id === userId) return 1
-    return 0
-  })
+  const sortedParticipants = useMemo(
+    () =>
+      [...participants].sort((a, b) => {
+        if (a.id === userId) return -1
+        if (b.id === userId) return 1
+        return 0
+      }),
+    [participants, userId]
+  )
 
   const focusedParticipant = focusedPaneId
     ? participants.find((p) => p.id === focusedPaneId)
     : null
+
+  if (sortedParticipants.length === 0) {
+    return (
+      <div className="flex h-full flex-col">
+        <div className="shrink-0 border-border border-b bg-muted/30">
+          <div className="px-4 py-3">
+            <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+              Problem
+            </p>
+            <div className="mt-2 text-sm">
+              <p>{prompt}</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-1 items-center justify-center text-muted-foreground text-sm">
+          Waiting for participants...
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -51,6 +66,9 @@ export function CodeArena({
           <div className="mt-2 text-sm">
             <p>{prompt}</p>
           </div>
+          <p className="mt-2 text-muted-foreground text-xs">
+            Code mode is WIP. Editors are currently read-only.
+          </p>
         </div>
       </div>
 
@@ -60,7 +78,7 @@ export function CodeArena({
           {(index) => {
             const participant = sortedParticipants[index]
             const isOwner = participant.id === userId
-            const cursor = cursors.get(participant.id)
+            const cursor = cursorsByParticipant[participant.id]
 
             return (
               <CodePane
@@ -68,11 +86,10 @@ export function CodeArena({
                 paneId={participant.id}
                 ownerId={participant.id}
                 ownerUsername={participant.username}
-                isEditable={isOwner && !isSpectator}
+                isEditable={false}
                 code={codeByParticipant[participant.id] ?? ""}
                 testResults={testResultsByParticipant[participant.id] ?? []}
                 cursor={isOwner ? undefined : cursor}
-                onCodeChange={isOwner ? onCodeChange : undefined}
                 onFocus={() => setFocusedPaneId(participant.id)}
               />
             )
@@ -92,16 +109,13 @@ export function CodeArena({
             paneId={focusedParticipant.id}
             ownerId={focusedParticipant.id}
             ownerUsername={focusedParticipant.username}
-            isEditable={focusedParticipant.id === userId && !isSpectator}
+            isEditable={false}
             code={codeByParticipant[focusedParticipant.id] ?? ""}
             testResults={testResultsByParticipant[focusedParticipant.id] ?? []}
             cursor={
               focusedParticipant.id === userId
                 ? undefined
-                : cursors.get(focusedParticipant.id)
-            }
-            onCodeChange={
-              focusedParticipant.id === userId ? onCodeChange : undefined
+                : cursorsByParticipant[focusedParticipant.id]
             }
           />
         )}

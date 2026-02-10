@@ -75,7 +75,7 @@ export type TypingProgress = {
 export type ClientMsg<T extends ArenaType> =
   | { type: "init"; userId: string; username: string; config?: ArenaConfig<T> }
   | { type: "leave" }
-  | ClientAction<T>
+  | { type: "action"; action: ClientAction<T> }
 
 // ===== CLIENT-SIDE ACTIONS =====
 
@@ -101,11 +101,11 @@ export type ActionMap = {
   typing: TypingProgressUpdate
 }
 
-export type ClientAction<T extends ArenaType> = ActionMap[T]
-
 export type DrawAction = ActionMap["draw"]
 export type CodeAction = ActionMap["code"]
 export type TypingAction = ActionMap["typing"]
+
+export type ClientAction<T extends ArenaType> = ActionMap[T]
 
 // ===== SERVER MESSAGES =====
 
